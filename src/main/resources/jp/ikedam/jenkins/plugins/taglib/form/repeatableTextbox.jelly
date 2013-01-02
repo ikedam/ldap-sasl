@@ -1,0 +1,75 @@
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+<!--Repeatable String field-->
+<st:documentation>
+    List&lt;String&gt; field
+    <st:attribute name="field">
+        Used for databinding.
+    </st:attribute>
+    <st:attribute name="header">
+        For each item, add this header.
+        This also activates drag&amp;drop (where the header is a grip).
+    </st:attribute>
+    <st:attribute name="defaultValue">
+        the defaultValue of the field.
+    </st:attribute>
+    <st:attribute name="minimum">
+        At least provide this number of copies initially.
+        minimum="1" is useful to make sure there's always at least one entry for the user to fill in.
+    </st:attribute>
+    <st:attribute name="noAddButton">
+      true if the default 'add' button (that adds a new copy) shouldn't be displayed.
+      When you use this attribute,
+    </st:attribute>
+    <st:attribute name="add">
+      If specified, this text will replace the standard "Add" text.
+    </st:attribute>
+</st:documentation>
+<st:adjunct includes="lib.form.repeatable.repeatable"/>
+<div class="repeated-container${!empty(header)?' with-drag-drop':''}">
+<!-- The first DIV is the master copy. -->
+<div class="repeated-chunk to-be-removed">
+    <j:if test="${!empty(header)}"><div class="dd-handle">${header}</div></j:if>
+    <table style="width: 100%;">
+    <tr><td style="vertical-align: middle; width: 100%;">
+        <f:textbox field="${attrs.field}" value="${attrs.defaultValue != null?attrs.defaultValue:''}" />
+    </td><td style="vertical-align: middle; white-space: nowrap;">
+        <f:repeatableDeleteButton value="${attrs.delete?:null}"/>
+    </td></tr>
+    </table>
+</div>
+<!-- then populate them for each item -->
+<j:forEach var="loop" varStatus="loopStatus" items="${instance[attrs.field]}">
+<div class="repeated-chunk">
+    <j:if test="${!empty(header)}"><div class="dd-handle">${header}</div></j:if>
+    <table style="width: 100%;">
+    <tr><td style="vertical-align: middle; width: 100%;">
+        <f:textbox field="${attrs.field}" value="${loop}" />
+    </td><td style="vertical-align: middle; white-space: nowrap;">
+    <j:if test="${!(loopStatus.index &lt; attrs.minimum)}">
+        <f:repeatableDeleteButton value="${attrs.delete?:null}"/>
+    </j:if>
+    </td></tr>
+    </table>
+</div>
+</j:forEach>
+
+<j:if test="${attrs.minimum &gt; 0}">
+    <j:forEach begin="${h.size2(instance[attrs.field])}" end="${attrs.minimum-1}">
+    <div class="repeated-chunk">
+        <j:if test="${!empty(header)}"><div class="dd-handle">${header}</div></j:if>
+        <table style="width: 100%;">
+        <tr><td style="vertical-align: middle; width: 100%;">
+            <f:textbox field="${attrs.field}" value="${attrs.defaultValue != null?attrs.defaultValue:''}" />
+        </td><td style="vertical-align: middle; white-space: nowrap;">
+        </td></tr>
+        </table>
+    </div>
+    </j:forEach>
+</j:if>
+
+<div class="repeatable-insertion-point" />
+<j:if test="${!attrs.noAddButton}">
+    <input type="button" value="${attrs.add?:'%Add'}" class="repeatable-add" />
+</j:if>
+</div>
+</j:jelly>

@@ -1,0 +1,23 @@
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:myF="/jp/ikedam/jenkins/plugins/taglib/form">
+    <f:entry title="${%LDAP URI}" field="ldapUriList">
+        <myF:repeatableTextbox field="ldapUriList" minimum="1" />
+    </f:entry>
+    <f:entry title="${%SASL Mechanisms}" field="mechanisms">
+        <st:adjunct includes="jp.ikedam.jenkins.plugins.ldap_sasl.LdapSaslSecurityRealm.mechAutocomplete.mechAutocomplete"/>
+        <f:textbox autoCompleteDelimChar=" " clazz="mech-auto-complete" />
+    </f:entry>
+    <f:entry title="${%Group search base}" field="groupSearchBase">
+        <f:textbox />
+    </f:entry>
+    <f:entry title="${%Prefix of Group Name}" field="groupPrefix">
+        <f:textbox />
+    </f:entry>
+    <f:advanced>
+        <f:entry title="${%Connection Timeout}" field="connectionTimeout">
+            <f:textbox default="0" />
+        </f:entry>
+        <f:entry title="${%Read Timeout}" field="readTimeout">
+            <f:textbox default="3000" />
+        </f:entry>
+    </f:advanced>
+</j:jelly>
