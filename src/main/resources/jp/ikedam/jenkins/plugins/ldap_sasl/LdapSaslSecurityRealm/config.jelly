@@ -30,7 +30,7 @@ THE SOFTWARE.
         <st:adjunct includes="jp.ikedam.jenkins.plugins.ldap_sasl.LdapSaslSecurityRealm.mechAutocomplete.mechAutocomplete"/>
         <f:textbox autoCompleteDelimChar=" " clazz="mech-auto-complete" />
     </f:entry>
-    <f:optionalBlock title="${%Resolve Group}" field="resolveGroup" inline="true">
+    <f:optionalBlock title="${%Resolve Group}" field="resolveGroup">
         <!--
           When LDAP SASL is initially selected(expanded in configure page),
           this optionalBlock is shown even if not checked. This seems the limitation of Jenkins.

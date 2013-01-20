@@ -70,6 +70,51 @@ import org.springframework.dao.DataAccessException;
 public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
         implements Serializable
 {
+    static public class ResolveGroup{
+        private String groupSearchBase;
+        
+        /**
+         * Returns the base DN for groups.
+         * 
+         * @return the base DN for searching groups.
+         */
+        public String getGroupSearchBase()
+        {
+            return groupSearchBase;
+        }
+        
+        private String groupPrefix;
+        
+        /**
+         * Returns the prefix added to the Jenkins group name
+         * 
+         * @return the prefix to be added before the group name
+         */
+        public String getGroupPrefix()
+        {
+            return groupPrefix;
+        }
+        
+        /**
+         * Constructor instantiating with parameters in the configuration page.
+         * 
+         * When instantiating from the saved configuration,
+         * the object is directly serialized with XStream,
+         * and no constructor is used.
+         * 
+         * @param groupSearchBase the base DN for searching groups.
+         * @param groupPrefix the prefix added to the Jenkins group name
+         */
+        @DataBoundConstructor
+        public ResolveGroup(
+                String groupSearchBase,
+                String groupPrefix
+        )
+        {
+            this.groupSearchBase = groupSearchBase;
+            this.groupPrefix = groupPrefix;
+        }
+    }
     /**
      * Descriptor to map the object and the view.
      */
@@ -251,9 +296,8 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
      * and no constructor is used.
      * 
      * @param ldapUriList the URIs of LDAP servers.
-     * @param mechanisms the whitespace seperated list of mechanisms.
-     * @param groupSearchBase the base DN for searching groups.
-     * @param groupPrefix the prefix added to the Jenkins group name
+     * @param mechanisms the whitespace separated list of mechanisms.
+     * @param resolveGroup the configuration of group resolving
      * @param connectionTimeout the timeout of the LDAP server connection.
      * @param readTimeout the timeout of the LDAP server reading.
      */
@@ -261,17 +305,16 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
     public LdapSaslSecurityRealm(
             List<String> ldapUriList,
             String mechanisms,
-            boolean resolveGroup,
-            String groupSearchBase,
-            String groupPrefix,
+            ResolveGroup resolveGroup,
             int connectionTimeout,
             int readTimeout
-            ){
+    )
+    {
         this.ldapUriList = ldapUriList;
         this.mechanismList = Arrays.asList(mechanisms.split("[\\s|,]+"));
-        this.resolveGroup = resolveGroup;
-        this.groupSearchBase = groupSearchBase;
-        this.groupPrefix = groupPrefix;
+        this.resolveGroup = (resolveGroup != null);
+        this.groupSearchBase = (resolveGroup != null)?resolveGroup.getGroupSearchBase():null;
+        this.groupPrefix = (resolveGroup != null)?resolveGroup.getGroupPrefix():null;
         this.connectionTimeout = connectionTimeout;
         this.readTimeout = readTimeout;
     }
