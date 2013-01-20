@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 
-Behaviour.specify("INPUT.mech-auto-complete", 'mechAutocomplete', 1000, function(e) {
+Behaviour.register({"INPUT.mech-auto-complete": function(e) {
     // Retrieve AutoComplete object for this element.
     var ac = null;
     var listeners = YAHOO.util.Event.getListeners(e);
@@ -53,4 +53,4 @@ Behaviour.specify("INPUT.mech-auto-complete", 'mechAutocomplete', 1000, function
         var extraction = this._extractQuery(allValue);
         return "?value=" + query + "&previous=" + encodeURIComponent(extraction.previous);
     };
-});
+}});
