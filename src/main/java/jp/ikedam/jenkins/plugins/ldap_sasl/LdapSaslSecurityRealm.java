@@ -1,5 +1,25 @@
-/**
+/*
+ * The MIT License
  * 
+ * Copyright (c) 2012-2013 IKEDA Yasuyuki
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 package jp.ikedam.jenkins.plugins.ldap_sasl;
 
@@ -57,7 +77,9 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
     public static final class DescriptorImpl extends Descriptor<SecurityRealm>
     {
         /**
-         * @return the name shown in system configuration.
+         * Returns the name shown in the system configuration page.
+         * 
+         * @return the name shown in the system configuration page.
          * @see hudson.model.Descriptor#getDisplayName()
          */
         @Override
@@ -76,16 +98,16 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
         /**
          * Returns the mechanisms that is supported.
          * 
-         * TODO: Is there any API to get available mechanisms?
-         * 
          * @return the array of available mechanisms.
          */
         public String[] getMechanismCandidates(){
+            // TODO: Is there any API to get available mechanisms?
             return MECH_CANDIDATES;
         }
         
         /**
-         * return auto complete information for the SASL mechanism field.
+         * Returns auto complete information for the SASL mechanism field.
+         * 
          * @param value the value that the user is inputting, and not supposed not completed. 
          * @return the list of candidates.
          */
@@ -118,6 +140,8 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
     private List<String> ldapUriList = new ArrayList<String>();
     
     /**
+     * Returns the list of LDAP URIs.
+     * 
      * @return the list of LDAP URIs.
      */
     public List<String> getLdapUriList()
@@ -125,9 +149,22 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
         return ldapUriList;
     }
     
+    /**
+     * Returns a joined list of LDAP URIs.
+     * 
+     * Used to be passed to JNDI.
+     * 
+     * @return a whitespace-seperated list of LDAP URIs.
+     */
+    public String getLdapUris(){
+        return StringUtils.join(getLdapUriList(), " ");
+    }
+    
     private List<String> mechanismList = new ArrayList<String>();
     
     /**
+     * Returns the mechanisms to be used in SASL negotiation.
+     * 
      * @return the mechanisms to be used in SASL negotiation.
      */
     public List<String> getMechanismList()
@@ -135,9 +172,22 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
         return mechanismList;
     }
     
+    /**
+     * Returns joined list of SASL mechanisms to be used in SASL negotiation.
+     * 
+     * Used for the displaying purpose.
+     * 
+     * @returns a whitespace seperated list of SASL mechanisms to be used in SASL negotiation.
+     */
+    public String getMechanisms(){
+        return StringUtils.join(getMechanismList(), " ");
+    }
+    
     private String groupSearchBase;
     
     /**
+     * Returns the base DN for groups.
+     * 
      * @return the base DN for searching groups.
      */
     public String getGroupSearchBase()
@@ -148,6 +198,8 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
     private String groupPrefix;
     
     /**
+     * Returns the prefix added to the Jenkins group name
+     * 
      * @return the prefix to be added before the group name
      */
     public String getGroupPrefix()
@@ -158,6 +210,8 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
     private int connectionTimeout;
     
     /**
+     * Returns the timeout of the LDAP server connection.
+     * 
      * @return the millisecond of the timeout to connect to the LDAP server.
      */
     public int getConnectionTimeout()
@@ -168,6 +222,8 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
     private int readTimeout;
     
     /**
+     * Returns the timeout of the LDAP server reading.
+     * 
      * @return the millisecond of the timeout to read from the LDAP server.
      */
     public int getReadTimeout()
@@ -175,6 +231,20 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
         return readTimeout;
     }
     
+    /**
+     * Constructor instantiating with parameters in the configuration page.
+     * 
+     * When instantiating from the saved configuration,
+     * the object is directly serialized with XStream,
+     * and no constructor is used.
+     * 
+     * @param ldapUriList the URIs of LDAP servers.
+     * @param mechanisms the whitespace seperated list of mechanisms.
+     * @param groupSearchBase the base DN for searching groups.
+     * @param groupPrefix the prefix added to the Jenkins group name
+     * @param connectionTimeout the timeout of the LDAP server connection.
+     * @param readTimeout the timeout of the LDAP server reading.
+     */
     @DataBoundConstructor
     public LdapSaslSecurityRealm(
             List<String> ldapUriList,
@@ -192,24 +262,11 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
         this.readTimeout = readTimeout;
     }
     
-    public String getLdapUris(){
-        return StringUtils.join(getLdapUriList(), " ");
-    }
-    public String getMechanisms(){
-        return StringUtils.join(getMechanismList(), " ");
-    }
-    
-    /*
-    @DataBoundConstructor
-    public LdapSaslSecurityRealm(List<String> ldapUriList, List<String> mechanismList, String groupSearchBase){
-        this.ldapUriList = ldapUriList;
-        this.mechanismList = mechanismList;
-        this.groupSearchBase = groupSearchBase;
-    }
-    */
-    
     /**
-     * ユーザの認証を行う。
+     * Authorize a user.
+     * 
+     * @param username
+     * @param password
      * @see hudson.security.AbstractPasswordBasedSecurityRealm#authenticate(java.lang.String, java.lang.String)
      */
     @Override
@@ -217,6 +274,8 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
             throws AuthenticationException
     {
         Logger logger = getLogger();
+        
+        // TODO: Test with LDAPS.
         
         // Parameters for JNDI
         Hashtable<String, Object> env = new Hashtable<String, Object>();
@@ -250,6 +309,7 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
         
         List<GrantedAuthority> authorities = new ArrayList<GrantedAuthority>();
         
+        // TODO: Resolving userdn and group must be performed in other modules.
         if(getGroupSearchBase() != null && !getGroupSearchBase().isEmpty())
         {
             String dn = getUserDn(ctx, username);

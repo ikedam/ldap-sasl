@@ -1,5 +1,25 @@
-/**
+/*
+ * The MIT License
  * 
+ * Copyright (c) 2012-2013 IKEDA Yasuyuki
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 package jp.ikedam.jenkins.plugins.ldap_sasl.ldap;
 
@@ -56,6 +76,8 @@ public class LdapWhoamiResponse implements ExtendedResponse
 
     private String id;
     /**
+     * Returns ResponseName(ID)
+     * 
      * @return ResponseName of ExtendedResponse
      * @see javax.naming.ldap.ExtendedResponse#getID()
      */
@@ -69,6 +91,8 @@ public class LdapWhoamiResponse implements ExtendedResponse
     private byte[] encodedValue;
     
     /**
+     * Returns ResponseValue
+     * 
      * @return ResponseValue of ExtendedResponse
      * @see javax.naming.ldap.ExtendedResponse#getEncodedValue()
      */
@@ -80,6 +104,8 @@ public class LdapWhoamiResponse implements ExtendedResponse
     
     private String authzId;
     /**
+     * Returns the authzId returned from the server
+     * 
      * @return the authzId returned from the server
      */
     public String getAuthzId()
@@ -89,6 +115,8 @@ public class LdapWhoamiResponse implements ExtendedResponse
     
     private AuthzIdType authzIdType = AuthzIdType.UNKNOWN_AUTHZ_ID;
     /**
+     * Returns the type of authzId returned from the server
+     * 
      * @return the authzIdType
      */
     public AuthzIdType getAuthzIdType()
@@ -99,6 +127,7 @@ public class LdapWhoamiResponse implements ExtendedResponse
     private String dn = null;
     /**
      * Returns the distinguished name (DN) returned from the server.
+     * 
      * Returns valid value only if getAuthzIdType() returns AuthzIdType.DN_AUTHZ_ID
      * 
      * @return the distinguished name (DN).
@@ -112,6 +141,7 @@ public class LdapWhoamiResponse implements ExtendedResponse
     private String userid = null;
     /**
      * Returns the user id returned from the server.
+     * 
      * Returns valid value only if getAuthzIdType() returns AuthzIdType.U_AUTHZ_ID
      * 
      * @return the user id.
@@ -122,6 +152,8 @@ public class LdapWhoamiResponse implements ExtendedResponse
     }
     
     /**
+     * Constructor
+     * 
      * @param id ResponseName of ExtendedResponse
      * @param berValue ResponseValue of ExtendedResponse
      * @throws UnsupportedEncodingException 
@@ -146,7 +178,9 @@ public class LdapWhoamiResponse implements ExtendedResponse
         {
             this.authzIdType = AuthzIdType.DN_AUTHZ_ID;
             this.dn = authzId.substring(3);
-        }else if(authzId.startsWith("u:")){
+        }
+        else if(authzId.startsWith("u:"))
+        {
             this.authzIdType = AuthzIdType.U_AUTHZ_ID;
             this.userid = authzId.substring(2);
         }
