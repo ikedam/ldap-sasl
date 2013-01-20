@@ -183,6 +183,18 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
         return StringUtils.join(getMechanismList(), " ");
     }
     
+    private boolean resolveGroup = false;
+    
+    /**
+     * Returns whether to resolve groups.
+     * 
+     * @return whether to resolve groups.
+     */
+    public boolean isResolveGroup()
+    {
+        return resolveGroup;
+    }
+
     private String groupSearchBase;
     
     /**
@@ -249,6 +261,7 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
     public LdapSaslSecurityRealm(
             List<String> ldapUriList,
             String mechanisms,
+            boolean resolveGroup,
             String groupSearchBase,
             String groupPrefix,
             int connectionTimeout,
@@ -256,6 +269,7 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
             ){
         this.ldapUriList = ldapUriList;
         this.mechanismList = Arrays.asList(mechanisms.split("[\\s|,]+"));
+        this.resolveGroup = resolveGroup;
         this.groupSearchBase = groupSearchBase;
         this.groupPrefix = groupPrefix;
         this.connectionTimeout = connectionTimeout;
@@ -307,40 +321,7 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
             throw new AuthenticationServiceException(String.format("Authentication failed: %s", username), e);
         }
         
-        List<GrantedAuthority> authorities = new ArrayList<GrantedAuthority>();
-        
-        // TODO: Resolving userdn and group must be performed in other modules.
-        if(getGroupSearchBase() != null && !getGroupSearchBase().isEmpty())
-        {
-            String dn = getUserDn(ctx, username);
-            if(dn == null){
-                logger.warning("Group cannot be resolved: cannot decide DN of the user!");
-            }
-            else
-            {
-                try
-                {
-                    SearchControls searchControls = new SearchControls();
-                    searchControls.setSearchScope(SearchControls.SUBTREE_SCOPE);
-                    logger.fine(String.format("Searching groups base=%s, dn=%s", getGroupSearchBase(), dn));
-                    NamingEnumeration<SearchResult> entries = ctx.search(getGroupSearchBase(), String.format("member=%s", dn), searchControls);
-                    while(entries.hasMore()){
-                        SearchResult entry = entries.next();
-                        String groupName = entry.getAttributes().get("cn").get().toString();
-                        if(getGroupPrefix() != null){
-                            groupName = String.format("%s%s", getGroupPrefix(), groupName);
-                        }
-                        authorities.add(new GrantedAuthorityImpl(groupName));
-                        logger.fine(String.format("group: %s", groupName));
-                    }
-                    entries.close();
-                }
-                catch(NamingException e)
-                {
-                    logger.log(Level.WARNING, "Failed to search groups", e);
-                }
-            }
-        }
+        List<GrantedAuthority> authorities = performResolveGroup(username, ctx);
         
         logger.fine("Authenticating succeeded.");
         UserDetails user = new User(
@@ -353,6 +334,59 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
                 authorities.toArray(new GrantedAuthority[0])
         );
         return user;
+    }
+
+    /**
+     * @param username
+     * @param ctx
+     * @return List of authorities
+     */
+    private List<GrantedAuthority> performResolveGroup(String username, LdapContext ctx)
+    {
+        List<GrantedAuthority> authorities = new ArrayList<GrantedAuthority>();
+        if(isResolveGroup())
+        {
+            return authorities;
+        }
+        
+        Logger logger = getLogger();
+        
+        if(getGroupSearchBase() == null || getGroupSearchBase().isEmpty())
+        {
+            logger.warning("Group cannot be resolved: groupSearchBase is not specified.");
+            return authorities;
+        }
+        
+        // TODO: Resolving userdn and group must be performed in other modules.
+        String dn = getUserDn(ctx, username);
+        if(dn == null){
+            logger.warning("Group cannot be resolved: cannot decide DN of the user!");
+            return authorities;
+        }
+        
+        try
+        {
+            SearchControls searchControls = new SearchControls();
+            searchControls.setSearchScope(SearchControls.SUBTREE_SCOPE);
+            logger.fine(String.format("Searching groups base=%s, dn=%s", getGroupSearchBase(), dn));
+            NamingEnumeration<SearchResult> entries = ctx.search(getGroupSearchBase(), String.format("member=%s", dn), searchControls);
+            while(entries.hasMore()){
+                SearchResult entry = entries.next();
+                String groupName = entry.getAttributes().get("cn").get().toString();
+                if(getGroupPrefix() != null){
+                    groupName = String.format("%s%s", getGroupPrefix(), groupName);
+                }
+                authorities.add(new GrantedAuthorityImpl(groupName));
+                logger.fine(String.format("group: %s", groupName));
+            }
+            entries.close();
+        }
+        catch(NamingException e)
+        {
+            logger.log(Level.WARNING, "Failed to search groups", e);
+        }
+        
+        return authorities;
     }
     
     /**

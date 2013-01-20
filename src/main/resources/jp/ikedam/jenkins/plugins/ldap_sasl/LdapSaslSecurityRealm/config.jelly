@@ -30,12 +30,21 @@ THE SOFTWARE.
         <st:adjunct includes="jp.ikedam.jenkins.plugins.ldap_sasl.LdapSaslSecurityRealm.mechAutocomplete.mechAutocomplete"/>
         <f:textbox autoCompleteDelimChar=" " clazz="mech-auto-complete" />
     </f:entry>
-    <f:entry title="${%Group search base}" field="groupSearchBase">
-        <f:textbox />
-    </f:entry>
-    <f:entry title="${%Prefix of Group Name}" field="groupPrefix">
-        <f:textbox />
-    </f:entry>
+    <f:optionalBlock title="${%Resolve Group}" field="resolveGroup" inline="true">
+        <!--
+          When LDAP SASL is initially selected(expanded in configure page),
+          this optionalBlock is shown even if not checked. This seems the limitation of Jenkins.
+          But if specified checked="true", it results that this optionalBlock is shown
+          EVEN IF LDAP SASL is not selected!
+          Former situation seems more harmless, put the initial state to unchecked.
+        -->
+        <f:entry title="${%Group search base}" field="groupSearchBase">
+            <f:textbox />
+        </f:entry>
+        <f:entry title="${%Prefix of Group Name}" field="groupPrefix">
+            <f:textbox />
+        </f:entry>
+    </f:optionalBlock>
     <f:advanced>
         <f:entry title="${%Connection Timeout}" field="connectionTimeout">
             <f:textbox default="0" />
