@@ -57,8 +57,8 @@ import org.apache.commons.lang.StringUtils;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import jp.ikedam.jenkins.plugins.ldap_sasl.ldap.LdapWhoamiRequest;
-import jp.ikedam.jenkins.plugins.ldap_sasl.ldap.LdapWhoamiResponse;
+import jp.ikedam.ldap.LdapWhoamiRequest;
+import jp.ikedam.ldap.LdapWhoamiResponse;
 
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;

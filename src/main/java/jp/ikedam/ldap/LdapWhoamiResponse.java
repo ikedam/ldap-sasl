@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package jp.ikedam.jenkins.plugins.ldap_sasl.ldap;
+package jp.ikedam.ldap;
 
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
