@@ -23,6 +23,7 @@
  */
 package jp.ikedam.jenkins.plugins.ldap_sasl;
 
+import hudson.DescriptorExtensionList;
 import hudson.Extension;
 import hudson.model.AutoCompletionCandidates;
 import hudson.model.Descriptor;
@@ -37,10 +38,7 @@ import java.util.Hashtable;
 import java.util.List;
 
 import javax.naming.Context;
-import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
-import javax.naming.directory.SearchControls;
-import javax.naming.directory.SearchResult;
 import javax.naming.ldap.InitialLdapContext;
 import javax.naming.ldap.LdapContext;
 
@@ -48,17 +46,12 @@ import org.acegisecurity.AuthenticationException;
 import org.acegisecurity.AuthenticationServiceException;
 import org.acegisecurity.BadCredentialsException;
 import org.acegisecurity.GrantedAuthority;
-import org.acegisecurity.GrantedAuthorityImpl;
 import org.acegisecurity.userdetails.User;
 import org.acegisecurity.userdetails.UserDetails;
 import org.acegisecurity.userdetails.UsernameNotFoundException;
 import org.apache.commons.lang.StringUtils;
 
-import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import jp.ikedam.ldap.LdapWhoamiRequest;
-import jp.ikedam.ldap.LdapWhoamiResponse;
 
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -70,51 +63,6 @@ import org.springframework.dao.DataAccessException;
 public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
         implements Serializable
 {
-    static public class ResolveGroup{
-        private String groupSearchBase;
-        
-        /**
-         * Returns the base DN for groups.
-         * 
-         * @return the base DN for searching groups.
-         */
-        public String getGroupSearchBase()
-        {
-            return groupSearchBase;
-        }
-        
-        private String groupPrefix;
-        
-        /**
-         * Returns the prefix added to the Jenkins group name
-         * 
-         * @return the prefix to be added before the group name
-         */
-        public String getGroupPrefix()
-        {
-            return groupPrefix;
-        }
-        
-        /**
-         * Constructor instantiating with parameters in the configuration page.
-         * 
-         * When instantiating from the saved configuration,
-         * the object is directly serialized with XStream,
-         * and no constructor is used.
-         * 
-         * @param groupSearchBase the base DN for searching groups.
-         * @param groupPrefix the prefix added to the Jenkins group name
-         */
-        @DataBoundConstructor
-        public ResolveGroup(
-                String groupSearchBase,
-                String groupPrefix
-        )
-        {
-            this.groupSearchBase = groupSearchBase;
-            this.groupPrefix = groupPrefix;
-        }
-    }
     /**
      * Descriptor to map the object and the view.
      */
@@ -178,6 +126,26 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
             }
             return candidate;
         }
+        
+        /**
+         * Returns the list of available UserDnResolvers.
+         *  
+         * @return the list of UserDnResolvers.
+         */
+        public DescriptorExtensionList<UserDnResolver,Descriptor<UserDnResolver>> getUserDnResolverList()
+        {
+            return UserDnResolver.all();
+        }
+        
+        /**
+         * Returns the list of available GroupResolvers.
+         *  
+         * @return the list of GroupResolvers.
+         */
+        public DescriptorExtensionList<GroupResolver,Descriptor<GroupResolver>> getGroupResolverList()
+        {
+            return GroupResolver.all();
+        }
     }
 
     private static final long serialVersionUID = 4771805355880928786L;
@@ -199,7 +167,7 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
      * 
      * Used to be passed to JNDI.
      * 
-     * @return a whitespace-seperated list of LDAP URIs.
+     * @return a whitespace-separated list of LDAP URIs.
      */
     public String getLdapUris(){
         return StringUtils.join(getLdapUriList(), " ");
@@ -222,46 +190,58 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
      * 
      * Used for the displaying purpose.
      * 
-     * @returns a whitespace seperated list of SASL mechanisms to be used in SASL negotiation.
+     * @returns a whitespace separated list of SASL mechanisms to be used in SASL negotiation.
      */
     public String getMechanisms(){
         return StringUtils.join(getMechanismList(), " ");
     }
     
-    private boolean resolveGroup = false;
+    private UserDnResolver userDnResolver = null;
     
     /**
-     * Returns whether to resolve groups.
+     * Returns the object to resolver the user DN.
      * 
-     * @return whether to resolve groups.
+     * @return the userDnResolver
      */
-    public boolean isResolveGroup()
+    public UserDnResolver getUserDnResolver()
     {
-        return resolveGroup;
-    }
-
-    private String groupSearchBase;
-    
-    /**
-     * Returns the base DN for groups.
-     * 
-     * @return the base DN for searching groups.
-     */
-    public String getGroupSearchBase()
-    {
-        return groupSearchBase;
+        return userDnResolver;
     }
     
-    private String groupPrefix;
+    private GroupResolver groupResolver = null;
     
     /**
-     * Returns the prefix added to the Jenkins group name
+     * Returns resolveGroup, that encapsulates the group resolving.
      * 
-     * @return the prefix to be added before the group name
+     * @return the resolveGroup
      */
-    public String getGroupPrefix()
+    public GroupResolver getGroupResolver()
     {
-        return groupPrefix;
+        return groupResolver;
+    }
+    
+    // for old version compatibility.
+    private String groupSearchBase = null;
+    private String groupPrefix = null;
+    /**
+     * fix up for the old version.
+     * 
+     * @return fixed instance.
+     */
+    public Object readResolve()
+    {
+        if(userDnResolver == null && groupResolver == null
+                && !StringUtils.isEmpty(groupSearchBase))
+        {
+            userDnResolver = new LdapWhoamiUserDnResolver();
+            groupResolver = new SearchGroupResolver(
+                    groupSearchBase,
+                    groupPrefix
+            );
+            groupSearchBase = null;
+            groupPrefix = null;
+        }
+        return this;
     }
     
     private int connectionTimeout;
@@ -305,16 +285,16 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
     public LdapSaslSecurityRealm(
             List<String> ldapUriList,
             String mechanisms,
-            ResolveGroup resolveGroup,
+            UserDnResolver userDnResolver,
+            GroupResolver groupResolver,
             int connectionTimeout,
             int readTimeout
     )
     {
         this.ldapUriList = ldapUriList;
         this.mechanismList = Arrays.asList(mechanisms.split("[\\s|,]+"));
-        this.resolveGroup = (resolveGroup != null);
-        this.groupSearchBase = (resolveGroup != null)?resolveGroup.getGroupSearchBase():null;
-        this.groupPrefix = (resolveGroup != null)?resolveGroup.getGroupPrefix():null;
+        this.userDnResolver = userDnResolver;
+        this.groupResolver = groupResolver;
         this.connectionTimeout = connectionTimeout;
         this.readTimeout = readTimeout;
     }
@@ -364,7 +344,12 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
             throw new AuthenticationServiceException(String.format("Authentication failed: %s", username), e);
         }
         
-        List<GrantedAuthority> authorities = performResolveGroup(username, ctx);
+        String userDn = (getUserDnResolver() != null)?getUserDnResolver().getUserDn(ctx, username):null;
+        logger.fine(String.format("User DN is %d", userDn));
+        
+        List<GrantedAuthority> authorities = (getGroupResolver() != null)?
+                getGroupResolver().resolveGroup(ctx, userDn, username):
+                    new ArrayList<GrantedAuthority>();
         
         logger.fine("Authenticating succeeded.");
         UserDetails user = new User(
@@ -378,94 +363,12 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
         );
         return user;
     }
-
-    /**
-     * @param username
-     * @param ctx
-     * @return List of authorities
-     */
-    private List<GrantedAuthority> performResolveGroup(String username, LdapContext ctx)
-    {
-        List<GrantedAuthority> authorities = new ArrayList<GrantedAuthority>();
-        if(isResolveGroup())
-        {
-            return authorities;
-        }
-        
-        Logger logger = getLogger();
-        
-        if(getGroupSearchBase() == null || getGroupSearchBase().isEmpty())
-        {
-            logger.warning("Group cannot be resolved: groupSearchBase is not specified.");
-            return authorities;
-        }
-        
-        // TODO: Resolving userdn and group must be performed in other modules.
-        String dn = getUserDn(ctx, username);
-        if(dn == null){
-            logger.warning("Group cannot be resolved: cannot decide DN of the user!");
-            return authorities;
-        }
-        
-        try
-        {
-            SearchControls searchControls = new SearchControls();
-            searchControls.setSearchScope(SearchControls.SUBTREE_SCOPE);
-            logger.fine(String.format("Searching groups base=%s, dn=%s", getGroupSearchBase(), dn));
-            NamingEnumeration<SearchResult> entries = ctx.search(getGroupSearchBase(), String.format("member=%s", dn), searchControls);
-            while(entries.hasMore()){
-                SearchResult entry = entries.next();
-                String groupName = entry.getAttributes().get("cn").get().toString();
-                if(getGroupPrefix() != null){
-                    groupName = String.format("%s%s", getGroupPrefix(), groupName);
-                }
-                authorities.add(new GrantedAuthorityImpl(groupName));
-                logger.fine(String.format("group: %s", groupName));
-            }
-            entries.close();
-        }
-        catch(NamingException e)
-        {
-            logger.log(Level.WARNING, "Failed to search groups", e);
-        }
-        
-        return authorities;
-    }
     
-    /**
-     * Get the authenticated user's DN.
-     * 
-     * @param ctx LdapContext that is already authenticated.
-     * @param username Username that the user entered to authenticate.
-     * @return
-     */
-    private String getUserDn(LdapContext ctx, String username)
-    {
-        LdapWhoamiResponse response;
-        try
-        {
-            response = (LdapWhoamiResponse)ctx.extendedOperation(new LdapWhoamiRequest());
-        }
-        catch (NamingException e)
-        {
-            getLogger().log(Level.WARNING, "Failed to resolve user DN", e);
-            return null;
-        }
-        
-        if(response.getAuthzIdType() != LdapWhoamiResponse.AuthzIdType.DN_AUTHZ_ID)
-        {
-            getLogger().warning(String.format("Failed to resolve user DN: LDAP server does not returned DN for whoami to ldap whoami: Server returned %s", response.getAuthzId()));
-            return null;
-        }
-        
-        return response.getDn();
-    }
-
     private Logger getLogger()
     {
         return Logger.getLogger(getClass().getName());
     }
-
+    
     /**
      * Used for support user input.
      * Not supported, return null.
