@@ -51,7 +51,7 @@ public class NoGroupResolver extends GroupResolver
      *         </dd>
      * </dl>
      */
-    @Extension(ordinal=10)
+    @Extension(ordinal=100)
     public static class DescriptorImpl extends Descriptor<GroupResolver>
     {
         /**

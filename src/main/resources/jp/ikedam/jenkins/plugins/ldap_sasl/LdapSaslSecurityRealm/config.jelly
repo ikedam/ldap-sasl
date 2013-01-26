@@ -46,6 +46,7 @@ THE SOFTWARE.
                 name="userDnResolver"
                 value="${loop.index}"
                 checked="${userDnResolver != null || (instance.userDnResolver == null &amp;&amp; loop.index == 0)}"
+                help="${curDescriptor.helpFile}"
             ><j:scope>
                 <!-- Shown only when corresponding UserDnResolver is selected. -->
                 <j:set var="descriptor" value="${curDescriptor}" />
@@ -77,6 +78,7 @@ THE SOFTWARE.
                 name="groupResolver"
                 value="${loop.index}"
                 checked="${groupResolver != null || (instance.groupResolver == null &amp;&amp; loop.index == 0)}"
+                help="${curDescriptor.helpFile}"
             ><j:scope>
                 <!-- Shown only when corresponding GroupResolver is selected. -->
                 <j:set var="descriptor" value="${curDescriptor}" />
