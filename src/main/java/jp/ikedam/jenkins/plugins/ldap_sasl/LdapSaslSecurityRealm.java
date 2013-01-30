@@ -30,8 +30,11 @@ import hudson.model.Descriptor;
 import hudson.security.AbstractPasswordBasedSecurityRealm;
 import hudson.security.GroupDetails;
 import hudson.security.SecurityRealm;
+import hudson.util.FormValidation;
 
 import java.io.Serializable;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Hashtable;
@@ -145,6 +148,80 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
         public DescriptorExtensionList<GroupResolver,Descriptor<GroupResolver>> getGroupResolverList()
         {
             return GroupResolver.all();
+        }
+        
+        /**
+         * Validate LDAP URI.
+         * 
+         * * Can be parsed as URI.
+         * * scheme must be ldap or ldaps
+         * ** ldaps is warned not tested now.
+         * * must not have user info part.
+         * * port must be between 1 - 65535 if specified
+         * * must not have query part.
+         * * must not have fragment part.
+         * 
+         * @param ldapUriList
+         * @return
+         */
+        public FormValidation doCheckLdapUriList(@QueryParameter String ldapUriList)
+        {
+            if(StringUtils.isEmpty(ldapUriList))
+            {
+                return FormValidation.error(Messages.LdapSaslSecurityRealm_LdapUriList_empty());
+            }
+            
+            URI uri;
+            try
+            {
+                uri = new URI(StringUtils.trim(ldapUriList));
+            }
+            catch(URISyntaxException e)
+            {
+                return FormValidation.error(Messages.LdapSaslSecurityRealm_LdapUriList_invalid(e.getMessage()));
+            }
+            
+            if(StringUtils.isEmpty(uri.getScheme())
+                    || (!("ldap".equals(uri.getScheme().toLowerCase()))
+                        && !("ldaps".equals(uri.getScheme().toLowerCase()))))
+            {
+                return FormValidation.error(Messages.LdapSaslSecurityRealm_LdapUriList_invalid("invalid scheme"));
+            }
+            
+            /* hostname is not required, use localhost for the default
+            if(StringUtils.isEmpty(uri.getHost()))
+            {
+                return FormValidation.error(MessageFormat.format(Messages.LdapSaslSecurityRealm_LdapUriList_invalid(), "invalid host"));
+            }
+            */
+            
+            if(uri.getPort() != -1 && 
+                    (uri.getPort() < 1 || uri.getPort() > 65535))
+            {
+                return FormValidation.error(Messages.LdapSaslSecurityRealm_LdapUriList_invalid("Invalid port number"));
+            }
+            
+            if(!StringUtils.isEmpty(uri.getUserInfo()))
+            {
+                return FormValidation.error(Messages.LdapSaslSecurityRealm_LdapUriList_invalid("Cannot specify a user information."));
+            }
+            
+            if(!StringUtils.isEmpty(uri.getQuery()))
+            {
+                return FormValidation.error(Messages.LdapSaslSecurityRealm_LdapUriList_invalid("Cannot specify a query."));
+            }
+            
+            if(!StringUtils.isEmpty(uri.getFragment()))
+            {
+                return FormValidation.error(Messages.LdapSaslSecurityRealm_LdapUriList_invalid("Cannot specify a fragment."));
+            }
+            
+            if("ldaps".equals(uri.getScheme().toLowerCase()))
+            {
+                return FormValidation.warning(Messages.LdapSaslSecurityRealm_LdapUriList_ldaps());
+            }
+            
+            return FormValidation.ok();
         }
     }
 
@@ -291,7 +368,11 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
             int readTimeout
     )
     {
-        this.ldapUriList = ldapUriList;
+        this.ldapUriList = new ArrayList<String>();
+        for(String ldapUri: ldapUriList)
+        {
+            this.ldapUriList.add(StringUtils.trim(ldapUri));
+        }
         this.mechanismList = Arrays.asList(mechanisms.split("[\\s|,]+"));
         this.userDnResolver = userDnResolver;
         this.groupResolver = groupResolver;
