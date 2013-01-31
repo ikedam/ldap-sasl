@@ -223,6 +223,21 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
             
             return FormValidation.ok();
         }
+        
+        /**
+         * Validate mechanisms.
+         * 
+         * @param mechanisms
+         * @return
+         */
+        public FormValidation doCheckMechanisms(@QueryParameter String mechanisms)
+        {
+            if(StringUtils.isEmpty(mechanisms))
+            {
+                return FormValidation.error(Messages.LdapSaslSecurityRealm_Mechanisms_empty());
+            }
+            return FormValidation.ok();
+        }
     }
 
     private static final long serialVersionUID = 4771805355880928786L;
@@ -240,14 +255,25 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
     }
     
     /**
-     * Returns a joined list of LDAP URIs.
+     * Returns a joined list of valid LDAP URIs.
      * 
      * Used to be passed to JNDI.
      * 
-     * @return a whitespace-separated list of LDAP URIs.
+     * @return a whitespace-separated list of valid LDAP URIs. null if no URIs are available
      */
-    public String getLdapUris(){
-        return StringUtils.join(getLdapUriList(), " ");
+    public String getValidLdapUris()
+    {
+        List<String> validLdapUriList = new ArrayList<String>();
+        DescriptorImpl descriptor = (DescriptorImpl)getDescriptor();
+        for(String uri: getLdapUriList())
+        {
+            if(descriptor.doCheckLdapUriList(uri).kind != FormValidation.Kind.ERROR)
+            {
+                validLdapUriList.add(uri);
+            }
+        }
+        
+        return !validLdapUriList.isEmpty()?StringUtils.join(validLdapUriList, " "):null;
     }
     
     private List<String> mechanismList = new ArrayList<String>();
@@ -271,6 +297,26 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
      */
     public String getMechanisms(){
         return StringUtils.join(getMechanismList(), " ");
+    }
+    
+    /**
+     * Returns joined list of valid SASL mechanisms to be used in SASL negotiation.
+     * 
+     * Used to be passed to JNDI.
+     * 
+     * @returns a whitespace separated list of SASL mechanisms to be used in SASL negotiation. null if no mechanism specified.
+     */
+    public String getValidMechanisms()
+    {
+        List<String> validMechanismList = new ArrayList<String>();
+        for(String mechanism: getMechanismList())
+        {
+            if(!StringUtils.isEmpty(mechanism))
+            {
+                validMechanismList.add(mechanism);
+            }
+        }
+        return !validMechanismList.isEmpty()?StringUtils.join(validMechanismList, " "):null;
     }
     
     private UserDnResolver userDnResolver = null;
@@ -373,7 +419,7 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
         {
             this.ldapUriList.add(StringUtils.trim(ldapUri));
         }
-        this.mechanismList = Arrays.asList(mechanisms.split("[\\s|,]+"));
+        this.mechanismList = Arrays.asList(mechanisms.split("[\\s,]+"));
         this.userDnResolver = userDnResolver;
         this.groupResolver = groupResolver;
         this.connectionTimeout = connectionTimeout;
@@ -393,25 +439,41 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
     {
         Logger logger = getLogger();
         
+        // check configuration.
+        String ldapUris = getValidLdapUris();
+        if(ldapUris == null)
+        {
+            logger.severe("No valid LDAP URI is specified.");
+            throw new AuthenticationServiceException("No valid LDAP URI is specified.");
+        }
+        
+        String mechanisms = getValidMechanisms();
+        if(mechanisms == null)
+        {
+            logger.severe("No valid mechanism is specified.");
+            throw new AuthenticationServiceException("No valid mechanism is specified.");
+        }
+        
         // TODO: Test with LDAPS.
         
         // Parameters for JNDI
         Hashtable<String, Object> env = new Hashtable<String, Object>();
         env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
-        env.put(Context.PROVIDER_URL, getLdapUris());
+        env.put(Context.PROVIDER_URL, ldapUris);
         env.put(Context.SECURITY_PRINCIPAL, username);
         env.put(Context.SECURITY_CREDENTIALS, password);
-        env.put(Context.SECURITY_AUTHENTICATION, getMechanisms());
+        env.put(Context.SECURITY_AUTHENTICATION, mechanisms);
         env.put("com.sun.jndi.ldap.connect.timeout", Integer.toString(getConnectionTimeout()));
         env.put("com.sun.jndi.ldap.read.timeout", Integer.toString(getReadTimeout()));
         
         logger.fine("Authenticating with LDAP-SASL:");
         logger.fine(String.format("username=%s", username));
-        logger.fine(String.format("servers=%s", getLdapUris()));
-        logger.fine(String.format("mech=%s", getMechanisms()));
+        logger.fine(String.format("servers=%s", ldapUris));
+        logger.fine(String.format("mech=%s", mechanisms));
         
         LdapContext ctx = null;
-        try{
+        try
+        {
             ctx = new InitialLdapContext(env,null);
         }
         catch(javax.naming.AuthenticationException e)
@@ -430,7 +492,7 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
         
         List<GrantedAuthority> authorities = (getGroupResolver() != null)?
                 getGroupResolver().resolveGroup(ctx, userDn, username):
-                    new ArrayList<GrantedAuthority>();
+                new ArrayList<GrantedAuthority>();
         
         logger.fine("Authenticating succeeded.");
         UserDetails user = new User(
