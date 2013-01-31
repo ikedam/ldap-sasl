@@ -25,6 +25,7 @@ package jp.ikedam.jenkins.plugins.ldap_sasl;
 
 import hudson.Extension;
 import hudson.model.Descriptor;
+import hudson.util.FormValidation;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -32,15 +33,19 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.naming.InvalidNameException;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 import javax.naming.directory.SearchControls;
 import javax.naming.directory.SearchResult;
 import javax.naming.ldap.LdapContext;
+import javax.naming.ldap.LdapName;
 
 import org.acegisecurity.GrantedAuthority;
 import org.acegisecurity.GrantedAuthorityImpl;
+import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
 
 /**
  * Resolves groups by querying the LDAP directory.
@@ -72,6 +77,43 @@ public class SearchGroupResolver extends GroupResolver
         public String getDisplayName()
         {
             return Messages.SearchGroupResolver_DisplayName();
+        }
+        
+        /**
+         * Validate the input group search base.
+         * 
+         * @param searchBase
+         * @return
+         */
+        public FormValidation doCheckSearchBase(@QueryParameter String searchBase)
+        {
+            if(StringUtils.isEmpty(searchBase))
+            {
+                return FormValidation.error(Messages.SearchGroupResolver_SearchBase_empty());
+            }
+            
+            try
+            {
+                new LdapName(StringUtils.trim(searchBase));
+            }
+            catch(InvalidNameException e)
+            {
+                return FormValidation.error(Messages.SearchGroupResolver_SearchBase_invalid(e.getMessage()));
+            }
+            
+            return FormValidation.ok();
+        }
+        
+        /**
+         * Validate the input prefix.
+         * 
+         * @param prefix
+         * @return
+         */
+        public FormValidation doPrefix(@QueryParameter String prefix)
+        {
+            // no validation is performed.
+            return FormValidation.ok();
         }
     }
     
@@ -121,8 +163,8 @@ public class SearchGroupResolver extends GroupResolver
             String prefix
     )
     {
-        this.searchBase = searchBase;
-        this.prefix = prefix;
+        this.searchBase = StringUtils.trim(searchBase);
+        this.prefix = StringUtils.trim(prefix);
     }
     
     /**

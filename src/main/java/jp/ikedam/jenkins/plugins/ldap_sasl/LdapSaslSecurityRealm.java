@@ -41,9 +41,11 @@ import java.util.Hashtable;
 import java.util.List;
 
 import javax.naming.Context;
+import javax.naming.InvalidNameException;
 import javax.naming.NamingException;
 import javax.naming.ldap.InitialLdapContext;
 import javax.naming.ldap.LdapContext;
+import javax.naming.ldap.LdapName;
 
 import org.acegisecurity.AuthenticationException;
 import org.acegisecurity.AuthenticationServiceException;
@@ -214,6 +216,24 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
             if(!StringUtils.isEmpty(uri.getFragment()))
             {
                 return FormValidation.error(Messages.LdapSaslSecurityRealm_LdapUriList_invalid("Cannot specify a fragment."));
+            }
+            
+            String path = uri.getPath();
+            if(path != null && path.startsWith("/"))
+            {
+                // remove "/" in the head if exists.
+                path = path.substring(1);
+            }
+            if(!StringUtils.isEmpty(path))
+            {
+                try
+                {
+                    new LdapName(path);
+                }
+                catch(InvalidNameException e)
+                {
+                    return FormValidation.error(Messages.LdapSaslSecurityRealm_LdapUriList_invalid(e.getMessage()));
+                }
             }
             
             if("ldaps".equals(uri.getScheme().toLowerCase()))
