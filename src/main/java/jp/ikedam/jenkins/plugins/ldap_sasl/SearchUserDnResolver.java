@@ -25,20 +25,24 @@ package jp.ikedam.jenkins.plugins.ldap_sasl;
 
 import hudson.Extension;
 import hudson.model.Descriptor;
+import hudson.util.FormValidation;
 
 import java.io.Serializable;
 import java.text.MessageFormat;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.naming.InvalidNameException;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 import javax.naming.directory.SearchControls;
 import javax.naming.directory.SearchResult;
 import javax.naming.ldap.LdapContext;
+import javax.naming.ldap.LdapName;
 
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
 
 /**
  * Resolve the user DN by querying LDAP directory.
@@ -77,6 +81,62 @@ public class SearchUserDnResolver extends UserDnResolver implements Serializable
         public String getDisplayName()
         {
             return Messages.SearchUserDnResolver_DisplayName();
+        }
+        
+        /**
+         * Validate the input user search base.
+         * 
+         * @param searchBase
+         * @return
+         */
+        public FormValidation doCheckSearchBase(@QueryParameter String searchBase)
+        {
+            if(StringUtils.isEmpty(searchBase))
+            {
+                return FormValidation.error(Messages.SearchUserDnResolver_SearchBase_empty());
+            }
+            
+            try
+            {
+                new LdapName(StringUtils.trim(searchBase));
+            }
+            catch(InvalidNameException e)
+            {
+                return FormValidation.error(Messages.SearchUserDnResolver_SearchBase_invalid(e.getMessage()));
+            }
+            
+            return FormValidation.ok();
+        }
+        
+        /**
+         * Validate the input search query template.
+         * 
+         * @param searchQueryTemplate
+         * @return
+         */
+        public FormValidation doCheckSearchQueryTemplate(@QueryParameter String searchQueryTemplate)
+        {
+            if(StringUtils.isEmpty(searchQueryTemplate))
+            {
+                return FormValidation.error(Messages.SearchUserDnResolver_SearchQueryTemplate_empty());
+            }
+            
+            String testString;
+            try
+            {
+                testString = MessageFormat.format(searchQueryTemplate, "Dummy");
+            }
+            catch(IllegalArgumentException e)
+            {
+                // Failed to parse the format...
+                return FormValidation.error(Messages.SearchUserDnResolver_SearchQueryTemplate_invalid(e.getMessage()));
+            }
+            if(testString.equals(searchQueryTemplate))
+            {
+                return FormValidation.error(Messages.SearchUserDnResolver_SearchQueryTemplate_invalid("Specify \"{0}\" where to replace with the username."));
+            }
+            
+            return FormValidation.ok();
         }
     }
     
