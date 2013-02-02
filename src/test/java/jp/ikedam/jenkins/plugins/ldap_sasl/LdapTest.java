@@ -33,6 +33,7 @@ import java.util.List;
 
 import org.acegisecurity.AuthenticationServiceException;
 import org.acegisecurity.BadCredentialsException;
+import org.acegisecurity.GrantedAuthorityImpl;
 import org.acegisecurity.userdetails.UserDetails;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
@@ -459,7 +460,7 @@ public class LdapTest
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
                     "DIGEST-MD5",
-                    new SearchUserDnResolver("", "uid={0}"),
+                    new SearchUserDnResolver(null, "uid={0}"),
                     new NoGroupResolver(),
                     0,
                     3000
@@ -467,6 +468,383 @@ public class LdapTest
             
             LdapUser user = (LdapUser)target.authenticate("test1", "password1");
             assertEquals("cn=User1,ou=People,dc=example,dc=com", user.getDn());
+        }
+        
+        // Specify manually
+        {
+            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+                    Arrays.asList(
+                            String.format("ldap://127.0.0.1:%d/", ldapPort)
+                            ),
+                    "DIGEST-MD5",
+                    new SearchUserDnResolver(null, "uid=test2"),
+                    new NoGroupResolver(),
+                    0,
+                    3000
+                    );
+            
+            LdapUser user = (LdapUser)target.authenticate("test1", "password1");
+            assertEquals("cn=User2,ou=People,dc=example,dc=com", user.getDn());
+        }
+        
+        // Complicated query
+        {
+            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+                    Arrays.asList(
+                            String.format("ldap://127.0.0.1:%d/", ldapPort)
+                            ),
+                    "DIGEST-MD5",
+                    new SearchUserDnResolver("dc=example,dc=com", "(| (& (objectClass=inetOrgPerson) (uid={0})) (& (objectClass=person) (uid={0})))"),
+                    new NoGroupResolver(),
+                    0,
+                    3000
+                    );
+            
+            LdapUser user = (LdapUser)target.authenticate("test1", "password1");
+            assertEquals("cn=User1,ou=People,dc=example,dc=com", user.getDn());
+        }
+    }
+    
+    @Test
+    @For(SearchUserDnResolver.class)
+    public void testSearchUserDnResolver_Failure()
+    {
+        // No match
+        {
+            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+                    Arrays.asList(
+                            String.format("ldap://127.0.0.1:%d/", ldapPort)
+                            ),
+                    "DIGEST-MD5",
+                    new SearchUserDnResolver("dc=example,dc=com", "cn={0}"),
+                    new NoGroupResolver(),
+                    0,
+                    3000
+                    );
+            
+            LdapUser user = (LdapUser)target.authenticate("test1", "password1");
+            assertNull(user.getDn());
+        }
+        
+        // More than one match
+        {
+            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+                    Arrays.asList(
+                            String.format("ldap://127.0.0.1:%d/", ldapPort)
+                            ),
+                    "DIGEST-MD5",
+                    new SearchUserDnResolver("dc=example,dc=com", "objectClass=inetOrgPerson"),
+                    new NoGroupResolver(),
+                    0,
+                    3000
+                    );
+            
+            LdapUser user = (LdapUser)target.authenticate("test1", "password1");
+            assertNull(user.getDn());
+        }
+        
+        // Non exist DN 1
+        {
+            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+                    Arrays.asList(
+                            String.format("ldap://127.0.0.1:%d/", ldapPort)
+                            ),
+                    "DIGEST-MD5",
+                    new SearchUserDnResolver("dc=example,dc=jp", "uid={0}"),
+                    new NoGroupResolver(),
+                    0,
+                    3000
+                    );
+            
+            LdapUser user = (LdapUser)target.authenticate("test1", "password1");
+            assertNull(user.getDn());
+        }
+        
+        // Non exist DN 2
+        {
+            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+                    Arrays.asList(
+                            String.format("ldap://127.0.0.1:%d/dc=example,dc=jp", ldapPort)
+                            ),
+                    "DIGEST-MD5",
+                    new SearchUserDnResolver(null, "uid={0}"),
+                    new NoGroupResolver(),
+                    0,
+                    3000
+                    );
+            
+            LdapUser user = (LdapUser)target.authenticate("test1", "password1");
+            assertNull(user.getDn());
+        }
+        
+        // Invalid DN
+        {
+            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+                    Arrays.asList(
+                            String.format("ldap://127.0.0.1:%d/dc=example,dc=jp", ldapPort)
+                            ),
+                    "DIGEST-MD5",
+                    new SearchUserDnResolver("hogehoge", "uid={0}"),
+                    new NoGroupResolver(),
+                    0,
+                    3000
+                    );
+            
+            LdapUser user = (LdapUser)target.authenticate("test1", "password1");
+            assertNull(user.getDn());
+        }
+        
+        // No query(null)
+        {
+            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+                    Arrays.asList(
+                            String.format("ldap://127.0.0.1:%d/", ldapPort)
+                            ),
+                    "DIGEST-MD5",
+                    new SearchUserDnResolver("dc=example,dc=com", null),
+                    new NoGroupResolver(),
+                    0,
+                    3000
+                    );
+            
+            LdapUser user = (LdapUser)target.authenticate("test1", "password1");
+            assertNull(user.getDn());
+        }
+        
+        // No query(empty)
+        {
+            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+                    Arrays.asList(
+                            String.format("ldap://127.0.0.1:%d/", ldapPort)
+                            ),
+                    "DIGEST-MD5",
+                    new SearchUserDnResolver("dc=example,dc=com", "  "),
+                    new NoGroupResolver(),
+                    0,
+                    3000
+                    );
+            
+            LdapUser user = (LdapUser)target.authenticate("test1", "password1");
+            assertNull(user.getDn());
+        }
+        
+        // Bad query
+        {
+            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+                    Arrays.asList(
+                            String.format("ldap://127.0.0.1:%d/", ldapPort)
+                            ),
+                    "DIGEST-MD5",
+                    new SearchUserDnResolver("dc=example,dc=com", "hogehoge"),
+                    new NoGroupResolver(),
+                    0,
+                    3000
+                    );
+            
+            LdapUser user = (LdapUser)target.authenticate("test1", "password1");
+            assertNull(user.getDn());
+        }
+    }
+    
+    @Test
+    @For(SearchGroupResolver.class)
+    public void testSearchGroupResolver_Success()
+    {
+        // Success
+        {
+            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+                    Arrays.asList(
+                            String.format("ldap://127.0.0.1:%d/", ldapPort)
+                            ),
+                    "DIGEST-MD5",
+                    new LdapWhoamiUserDnResolver(),
+                    new SearchGroupResolver("dc=example,dc=com", null),
+                    0,
+                    3000
+                    );
+            
+            LdapUser user = (LdapUser)target.authenticate("test1", "password1");
+            assertEquals(4, user.getAuthorities().length);
+            assertTrue(Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("Group1")));
+            assertFalse(Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("Group2")));
+            assertTrue(Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("Group3")));
+            assertTrue(Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("UniqueGroup1")));
+            assertFalse(Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("UniqueGroup2")));
+            assertTrue(Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("UniqueGroup3")));
+        }
+        
+        // Specifying prefix
+        {
+            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+                    Arrays.asList(
+                            String.format("ldap://127.0.0.1:%d/", ldapPort)
+                            ),
+                    "DIGEST-MD5",
+                    new LdapWhoamiUserDnResolver(),
+                    new SearchGroupResolver("dc=example,dc=com", "ROLE_"),
+                    0,
+                    3000
+                    );
+            
+            LdapUser user = (LdapUser)target.authenticate("test2", "password2");
+            assertEquals(4, user.getAuthorities().length);
+            assertTrue(Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("ROLE_Group2")));
+            assertTrue(Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("ROLE_Group3")));
+            assertTrue(Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("ROLE_UniqueGroup2")));
+            assertTrue(Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("ROLE_UniqueGroup3")));
+        }
+        
+        // Specifying DN in URI
+        {
+            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+                    Arrays.asList(
+                            String.format("ldap://127.0.0.1:%d/dc=example,dc=com", ldapPort)
+                            ),
+                    "DIGEST-MD5",
+                    new LdapWhoamiUserDnResolver(),
+                    new SearchGroupResolver("", null),
+                    0,
+                    3000
+                    );
+            
+            LdapUser user = (LdapUser)target.authenticate("test1", "password1");
+            assertEquals(4, user.getAuthorities().length);
+            assertTrue(Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("Group1")));
+            assertTrue(Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("Group3")));
+            assertTrue(Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("UniqueGroup1")));
+            assertTrue(Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("UniqueGroup3")));
+        }
+        
+        // No DN
+        {
+            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+                    Arrays.asList(
+                            String.format("ldap://127.0.0.1:%d/", ldapPort)
+                            ),
+                    "DIGEST-MD5",
+                    new LdapWhoamiUserDnResolver(),
+                    new SearchGroupResolver(null, null),
+                    0,
+                    3000
+                    );
+            
+            LdapUser user = (LdapUser)target.authenticate("test1", "password1");
+            assertEquals(4, user.getAuthorities().length);
+            assertTrue(Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("Group1")));
+            assertTrue(Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("Group3")));
+            assertTrue(Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("UniqueGroup1")));
+            assertTrue(Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("UniqueGroup3")));
+        }
+        
+        // Specifying DN both in URI and parameter
+        {
+            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+                    Arrays.asList(
+                            String.format("ldap://127.0.0.1:%d/dc=com", ldapPort)
+                            ),
+                    "DIGEST-MD5",
+                    new LdapWhoamiUserDnResolver(),
+                    new SearchGroupResolver("dc=example", null),
+                    0,
+                    3000
+                    );
+            
+            LdapUser user = (LdapUser)target.authenticate("test1", "password1");
+            assertEquals(4, user.getAuthorities().length);
+            assertTrue(Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("Group1")));
+            assertTrue(Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("Group3")));
+            assertTrue(Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("UniqueGroup1")));
+            assertTrue(Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("UniqueGroup3")));
+        }
+        
+        // No Group
+        {
+            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+                    Arrays.asList(
+                            String.format("ldap://127.0.0.1:%d/", ldapPort)
+                            ),
+                    "DIGEST-MD5",
+                    new LdapWhoamiUserDnResolver(),
+                    new SearchGroupResolver("dc=example,dc=com", null),
+                    0,
+                    3000
+                    );
+            
+            LdapUser user = (LdapUser)target.authenticate("test3", "password3");
+            assertEquals(0, user.getAuthorities().length);
+        }
+    }
+    
+    @Test
+    @For(SearchGroupResolver.class)
+    public void testSearchGroupResolver_Failure()
+    {
+        // User is not resolved
+        {
+            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+                    Arrays.asList(
+                            String.format("ldap://127.0.0.1:%d/", ldapPort)
+                            ),
+                    "DIGEST-MD5",
+                    new NoUserDnResolver(),
+                    new SearchGroupResolver("dc=example,dc=jp", null),
+                    0,
+                    3000
+                    );
+            
+            LdapUser user = (LdapUser)target.authenticate("test1", "password1");
+            assertEquals(0, user.getAuthorities().length);
+        }
+        
+        // Non-exist dn 1
+        {
+            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+                    Arrays.asList(
+                            String.format("ldap://127.0.0.1:%d/", ldapPort)
+                            ),
+                    "DIGEST-MD5",
+                    new LdapWhoamiUserDnResolver(),
+                    new SearchGroupResolver("dc=example,dc=jp", null),
+                    0,
+                    3000
+                    );
+            
+            LdapUser user = (LdapUser)target.authenticate("test1", "password1");
+            assertEquals(0, user.getAuthorities().length);
+        }
+        
+        // Non-exist dn 1
+        {
+            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+                    Arrays.asList(
+                            String.format("ldap://127.0.0.1:%d/dc=example,dc=jp", ldapPort)
+                            ),
+                    "DIGEST-MD5",
+                    new LdapWhoamiUserDnResolver(),
+                    new SearchGroupResolver(null, null),
+                    0,
+                    3000
+                    );
+            
+            LdapUser user = (LdapUser)target.authenticate("test1", "password1");
+            assertEquals(0, user.getAuthorities().length);
+        }
+        
+        // Invalid DN
+        {
+            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+                    Arrays.asList(
+                            String.format("ldap://127.0.0.1:%d/", ldapPort)
+                            ),
+                    "DIGEST-MD5",
+                    new LdapWhoamiUserDnResolver(),
+                    new SearchGroupResolver("hogehoge", null),
+                    0,
+                    3000
+                    );
+            
+            LdapUser user = (LdapUser)target.authenticate("test1", "password1");
+            assertEquals(0, user.getAuthorities().length);
         }
     }
 }

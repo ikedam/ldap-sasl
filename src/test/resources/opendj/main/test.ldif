@@ -42,3 +42,41 @@ sn: test2
 uid: test3
 mail: test3@example.com
 userPassword: {Clear}password3
+
+dn: cn=Group1,ou=Group,dc=example,dc=com
+objectClass: top
+objectClass: groupOfNames
+cn: Group1
+member: cn=User1,ou=People,dc=example,dc=com
+
+dn: cn=Group2,ou=Group,dc=example,dc=com
+objectClass: top
+objectClass: groupOfNames
+cn: Group2
+member: cn=User2,ou=People,dc=example,dc=com
+
+dn: cn=Group3,ou=Group,dc=example,dc=com
+objectClass: top
+objectClass: groupOfNames
+cn: Group3
+member: cn=User1,ou=People,dc=example,dc=com
+member: cn=User2,ou=People,dc=example,dc=com
+
+dn: cn=UniqueGroup1,ou=Group,dc=example,dc=com
+objectClass: top
+objectClass: groupOfUniqueNames
+cn: UniqueGroup1
+uniqueMember: cn=User1,ou=People,dc=example,dc=com
+
+dn: cn=UniqueGroup2,ou=Group,dc=example,dc=com
+objectClass: top
+objectClass: groupOfUniqueNames
+cn: UniqueGroup2
+uniqueMember: cn=User2,ou=People,dc=example,dc=com
+
+dn: cn=UniqueGroup3,ou=Group,dc=example,dc=com
+objectClass: top
+objectClass: groupOfUniqueNames
+cn: UniqueGroup3
+uniqueMember: cn=User1,ou=People,dc=example,dc=com
+uniqueMember: cn=User2,ou=People,dc=example,dc=com
