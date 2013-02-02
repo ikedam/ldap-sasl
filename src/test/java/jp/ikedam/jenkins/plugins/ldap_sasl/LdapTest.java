@@ -149,15 +149,15 @@ public class LdapTest
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test1", "password1");
-            assertNotNull(user);
-            assertEquals("test1", user.getUsername());
-            assertEquals("", user.getPassword());
-            assertNull(user.getDn());
-            assertTrue(user.isEnabled());
-            assertTrue(user.isAccountNonExpired());
-            assertTrue(user.isAccountNonLocked());
-            assertTrue(user.isCredentialsNonExpired());
-            assertEquals(0, user.getAuthorities().length);
+            assertNotNull("Using DIGEST-MD5", user);
+            assertEquals("Using DIGEST-MD5", "test1", user.getUsername());
+            assertEquals("Using DIGEST-MD5", "", user.getPassword());
+            assertNull("Using DIGEST-MD5", user.getDn());
+            assertTrue("Using DIGEST-MD5", user.isEnabled());
+            assertTrue("Using DIGEST-MD5", user.isAccountNonExpired());
+            assertTrue("Using DIGEST-MD5", user.isAccountNonLocked());
+            assertTrue("Using DIGEST-MD5", user.isCredentialsNonExpired());
+            assertEquals("Using DIGEST-MD5", 0, user.getAuthorities().length);
         }
         
         // Supports CRAM-MD5
@@ -174,7 +174,7 @@ public class LdapTest
                     );
             
             UserDetails user = target.authenticate("test2", "password2");
-            assertNotNull(user);
+            assertNotNull("Using CRAM-MD5", user);
         }
         
         // Specifying non-exist mechanism and exist mechanism
@@ -191,16 +191,16 @@ public class LdapTest
                     );
             
             UserDetails user = target.authenticate("test1", "password1");
-            assertNotNull(user);
+            assertNotNull("Specify unavailable mechanism and available mechanism", user);
         }
         
-        // Specifying invalid dn
+        // Specifying non-exist dn
         {
             LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
                     Arrays.asList(
                             String.format("ldap://127.0.0.1:%d/dc=nosuchdc,dc=com", ldapPort)
                             ),
-                    "NOSUCHMETHOD DIGEST-MD5",
+                    "DIGEST-MD5",
                     new NoUserDnResolver(),
                     new NoGroupResolver(),
                     0,
@@ -208,7 +208,7 @@ public class LdapTest
                     );
             
             UserDetails user = target.authenticate("test1", "password1");
-            assertNotNull(user);
+            assertNotNull("Specifying non-exist dn", user);
         }
     }
     
@@ -232,11 +232,11 @@ public class LdapTest
             try
             {
                 target.authenticate("test1", "baddpassword");
-                assertTrue("Not reachable", false);
+                assertTrue("Invalid credential: Not reachable", false);
             }
             catch(BadCredentialsException e)
             {
-                assertTrue(true);
+                assertTrue("Invalid credential", true);
             }
         }
         
@@ -254,11 +254,11 @@ public class LdapTest
             try
             {
                 target.authenticate("test1", "baddpassword");
-                assertTrue("Not reachable", false);
+                assertTrue("No valid URI: Not reachable", false);
             }
             catch(AuthenticationServiceException e)
             {
-                assertTrue(true);
+                assertTrue("No valid URI", true);
             }
         }
         
@@ -278,15 +278,15 @@ public class LdapTest
             try
             {
                 target.authenticate("test1", "baddpassword");
-                assertTrue("Not reachable", false);
+                assertTrue("No valid mechanism: Not reachable", false);
             }
             catch(AuthenticationServiceException e)
             {
-                assertTrue(true);
+                assertTrue("No valid mechanism", true);
             }
         }
         
-        // Bad mechanism
+        // unavailable mechanism
         {
             LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
                     Arrays.asList(
@@ -302,11 +302,11 @@ public class LdapTest
             try
             {
                 target.authenticate("test1", "baddpassword");
-                assertTrue("Not reachable", false);
+                assertTrue("unavailable mechanism: Not reachable", false);
             }
             catch(AuthenticationServiceException e)
             {
-                assertTrue(true);
+                assertTrue("unavailable mechanism", true);
             }
         }
     }
@@ -315,7 +315,7 @@ public class LdapTest
     @For(LdapWhoamiUserDnResolver.class)
     public void testLdapWhoamiUserDnResolver_Success()
     {
-        // LDAP who am i succeeded.
+        // Succeed
         {
             LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
                     Arrays.asList(
@@ -329,7 +329,7 @@ public class LdapTest
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test1", "password1");
-            assertEquals("cn=User1,ou=People,dc=example,dc=com", user.getDn());
+            assertEquals("Use LDAP Who am I", "cn=User1,ou=People,dc=example,dc=com", user.getDn());
         }
     }
     
@@ -351,7 +351,7 @@ public class LdapTest
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test3", "password3");
-            assertNull(user.getDn());
+            assertNull("LDAP who am i is not allowed", user.getDn());
         }
         
         // LDAP who am i is not supported.
@@ -372,7 +372,7 @@ public class LdapTest
                         );
                 
                 LdapUser user = (LdapUser)target.authenticate("test1", "password1");
-                assertNull(user.getDn());
+                assertNull("LDAP who am i is not supported", user.getDn());
             }
             finally
             {
@@ -399,7 +399,7 @@ public class LdapTest
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test1", "password1");
-            assertEquals("cn=User1,ou=People,dc=example,dc=com", user.getDn());
+            assertEquals("Query for user", "cn=User1,ou=People,dc=example,dc=com", user.getDn());
         }
         
         // Success(other than uid)
@@ -416,7 +416,7 @@ public class LdapTest
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test2", "password2");
-            assertEquals("cn=User3,ou=People,dc=example,dc=com", user.getDn());
+            assertEquals("Query for user using other than uid", "cn=User3,ou=People,dc=example,dc=com", user.getDn());
         }
         
         // Specifying searchbase in URI
@@ -433,7 +433,7 @@ public class LdapTest
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test1", "password1");
-            assertEquals("cn=User1,ou=People,dc=example,dc=com", user.getDn());
+            assertEquals("Specifying searchbase in URI", "cn=User1,ou=People,dc=example,dc=com", user.getDn());
         }
         
         // Specifying searchbase in URI and parameter
@@ -450,7 +450,7 @@ public class LdapTest
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test1", "password1");
-            assertEquals("cn=User1,ou=People,dc=example,dc=com", user.getDn());
+            assertEquals("Specifying searchbase in URI and parameter", "cn=User1,ou=People,dc=example,dc=com", user.getDn());
         }
         
         // No searchbase
@@ -467,10 +467,10 @@ public class LdapTest
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test1", "password1");
-            assertEquals("cn=User1,ou=People,dc=example,dc=com", user.getDn());
+            assertEquals("No searchbase", "cn=User1,ou=People,dc=example,dc=com", user.getDn());
         }
         
-        // Specify manually
+        // No parameter holder in query template
         {
             LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
                     Arrays.asList(
@@ -484,7 +484,7 @@ public class LdapTest
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test1", "password1");
-            assertEquals("cn=User2,ou=People,dc=example,dc=com", user.getDn());
+            assertEquals("No parameter holder in query template", "cn=User2,ou=People,dc=example,dc=com", user.getDn());
         }
         
         // Complicated query
@@ -501,7 +501,7 @@ public class LdapTest
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test1", "password1");
-            assertEquals("cn=User1,ou=People,dc=example,dc=com", user.getDn());
+            assertEquals("Complicated query", "cn=User1,ou=People,dc=example,dc=com", user.getDn());
         }
     }
     
@@ -523,7 +523,7 @@ public class LdapTest
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test1", "password1");
-            assertNull(user.getDn());
+            assertNull("No match", user.getDn());
         }
         
         // More than one match
@@ -540,10 +540,10 @@ public class LdapTest
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test1", "password1");
-            assertNull(user.getDn());
+            assertNull("More than one match", user.getDn());
         }
         
-        // Non exist DN 1
+        // Non exist DN(specified as a parameter)
         {
             LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
                     Arrays.asList(
@@ -557,10 +557,10 @@ public class LdapTest
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test1", "password1");
-            assertNull(user.getDn());
+            assertNull("Non exist DN(specified as a parameter)", user.getDn());
         }
         
-        // Non exist DN 2
+        // Non exist DN(specified in URI)
         {
             LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
                     Arrays.asList(
@@ -574,7 +574,7 @@ public class LdapTest
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test1", "password1");
-            assertNull(user.getDn());
+            assertNull("Non exist DN(specified in URI)", user.getDn());
         }
         
         // Invalid DN
@@ -591,7 +591,7 @@ public class LdapTest
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test1", "password1");
-            assertNull(user.getDn());
+            assertNull("Invalid DN", user.getDn());
         }
         
         // No query(null)
@@ -608,7 +608,7 @@ public class LdapTest
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test1", "password1");
-            assertNull(user.getDn());
+            assertNull("No query(null)", user.getDn());
         }
         
         // No query(empty)
@@ -625,7 +625,7 @@ public class LdapTest
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test1", "password1");
-            assertNull(user.getDn());
+            assertNull("No query(empty)", user.getDn());
         }
         
         // Bad query
@@ -642,7 +642,7 @@ public class LdapTest
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test1", "password1");
-            assertNull(user.getDn());
+            assertNull("Bad query", user.getDn());
         }
     }
     
@@ -664,13 +664,13 @@ public class LdapTest
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test1", "password1");
-            assertEquals(4, user.getAuthorities().length);
-            assertTrue(Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("Group1")));
-            assertFalse(Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("Group2")));
-            assertTrue(Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("Group3")));
-            assertTrue(Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("UniqueGroup1")));
-            assertFalse(Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("UniqueGroup2")));
-            assertTrue(Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("UniqueGroup3")));
+            assertEquals("Query for group", 4, user.getAuthorities().length);
+            assertTrue("Query for group", Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("Group1")));
+            assertFalse("Query for group", Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("Group2")));
+            assertTrue("Query for group", Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("Group3")));
+            assertTrue("Query for group", Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("UniqueGroup1")));
+            assertFalse("Query for group", Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("UniqueGroup2")));
+            assertTrue("Query for group", Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("UniqueGroup3")));
         }
         
         // Specifying prefix
@@ -687,11 +687,11 @@ public class LdapTest
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test2", "password2");
-            assertEquals(4, user.getAuthorities().length);
-            assertTrue(Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("ROLE_Group2")));
-            assertTrue(Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("ROLE_Group3")));
-            assertTrue(Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("ROLE_UniqueGroup2")));
-            assertTrue(Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("ROLE_UniqueGroup3")));
+            assertEquals("Specifying prefix", 4, user.getAuthorities().length);
+            assertTrue("Specifying prefix", Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("ROLE_Group2")));
+            assertTrue("Specifying prefix", Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("ROLE_Group3")));
+            assertTrue("Specifying prefix", Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("ROLE_UniqueGroup2")));
+            assertTrue("Specifying prefix", Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("ROLE_UniqueGroup3")));
         }
         
         // Specifying DN in URI
@@ -708,11 +708,11 @@ public class LdapTest
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test1", "password1");
-            assertEquals(4, user.getAuthorities().length);
-            assertTrue(Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("Group1")));
-            assertTrue(Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("Group3")));
-            assertTrue(Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("UniqueGroup1")));
-            assertTrue(Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("UniqueGroup3")));
+            assertEquals("Specifying DN in URI", 4, user.getAuthorities().length);
+            assertTrue("Specifying DN in URI", Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("Group1")));
+            assertTrue("Specifying DN in URI", Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("Group3")));
+            assertTrue("Specifying DN in URI", Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("UniqueGroup1")));
+            assertTrue("Specifying DN in URI", Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("UniqueGroup3")));
         }
         
         // No DN
@@ -729,11 +729,11 @@ public class LdapTest
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test1", "password1");
-            assertEquals(4, user.getAuthorities().length);
-            assertTrue(Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("Group1")));
-            assertTrue(Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("Group3")));
-            assertTrue(Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("UniqueGroup1")));
-            assertTrue(Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("UniqueGroup3")));
+            assertEquals("No DN", 4, user.getAuthorities().length);
+            assertTrue("No DN", Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("Group1")));
+            assertTrue("No DN", Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("Group3")));
+            assertTrue("No DN", Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("UniqueGroup1")));
+            assertTrue("No DN", Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("UniqueGroup3")));
         }
         
         // Specifying DN both in URI and parameter
@@ -750,11 +750,11 @@ public class LdapTest
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test1", "password1");
-            assertEquals(4, user.getAuthorities().length);
-            assertTrue(Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("Group1")));
-            assertTrue(Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("Group3")));
-            assertTrue(Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("UniqueGroup1")));
-            assertTrue(Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("UniqueGroup3")));
+            assertEquals("Specifying DN both in URI and parameter", 4, user.getAuthorities().length);
+            assertTrue("Specifying DN both in URI and parameter", Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("Group1")));
+            assertTrue("Specifying DN both in URI and parameter", Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("Group3")));
+            assertTrue("Specifying DN both in URI and parameter", Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("UniqueGroup1")));
+            assertTrue("Specifying DN both in URI and parameter", Arrays.asList(user.getAuthorities()).contains(new GrantedAuthorityImpl("UniqueGroup3")));
         }
         
         // No Group
@@ -771,7 +771,7 @@ public class LdapTest
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test3", "password3");
-            assertEquals(0, user.getAuthorities().length);
+            assertEquals("No Group", 0, user.getAuthorities().length);
         }
     }
     
@@ -793,10 +793,10 @@ public class LdapTest
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test1", "password1");
-            assertEquals(0, user.getAuthorities().length);
+            assertEquals("User is not resolved", 0, user.getAuthorities().length);
         }
         
-        // Non-exist dn 1
+        // Non-exist DN specified in parameter
         {
             LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
                     Arrays.asList(
@@ -810,10 +810,10 @@ public class LdapTest
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test1", "password1");
-            assertEquals(0, user.getAuthorities().length);
+            assertEquals("Non-exist DN specified in parameter", 0, user.getAuthorities().length);
         }
         
-        // Non-exist dn 1
+        // Non-exist DN specified in URI
         {
             LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
                     Arrays.asList(
@@ -827,7 +827,7 @@ public class LdapTest
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test1", "password1");
-            assertEquals(0, user.getAuthorities().length);
+            assertEquals("Non-exist DN specified in URI", 0, user.getAuthorities().length);
         }
         
         // Invalid DN
@@ -844,7 +844,7 @@ public class LdapTest
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test1", "password1");
-            assertEquals(0, user.getAuthorities().length);
+            assertEquals("Invalid DN", 0, user.getAuthorities().length);
         }
     }
 }
