@@ -23,12 +23,21 @@
  */
 package jp.ikedam.jenkins.plugins.ldap_sasl;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.Arrays;
+import java.util.logging.Logger;
 
+import jenkins.model.Jenkins;
+
+import hudson.XmlFile;
 import hudson.model.AutoCompletionCandidates;
 import hudson.util.FormValidation;
 
+import org.apache.commons.lang.StringUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
@@ -424,6 +433,64 @@ public class LdapSaslSecurityRealmJenkinsTest
         {
             WebClient wc = j.createWebClient();
             wc.goTo("configure");
+        }
+    }
+    
+    private File getResource(String name) throws URISyntaxException, FileNotFoundException
+    {
+        String filename = String.format("%s/%s", StringUtils.join(getClass().getName().split("\\."), "/"), name);
+        URL url = ClassLoader.getSystemResource(filename);
+        if(url == null)
+        {
+            throw new FileNotFoundException(String.format("Not found: %s", filename));
+        }
+        return new File(url.toURI());
+    }
+    
+    @Test
+    public void testReadResolve() throws URISyntaxException, IOException
+    {
+        // compatibility with 0.1.0: no configuration for group.
+        {
+            XmlFile xmlFile = new XmlFile(
+                    Jenkins.XSTREAM,
+                    getResource("config-0.1.0_01.xml")
+                    );
+            LdapSaslSecurityRealm target = (LdapSaslSecurityRealm)xmlFile.read();
+            assertEquals("compatibility with 0.1.0: no configuration for group.",
+                    LdapWhoamiUserDnResolver.class,
+                    target.getUserDnResolver().getClass()
+                    );
+            assertEquals("compatibility with 0.1.0: no configuration for group.",
+                    NoGroupResolver.class,
+                    target.getGroupResolver().getClass()
+                    );
+        }
+        
+        // compatibility with 0.1.0: configured for group.
+        {
+            XmlFile xmlFile = new XmlFile(
+                    Jenkins.XSTREAM,
+                    getResource("config-0.1.0_02.xml")
+                    );
+            LdapSaslSecurityRealm target = (LdapSaslSecurityRealm)xmlFile.read();
+            assertEquals("compatibility with 0.1.0: configured for group.",
+                    LdapWhoamiUserDnResolver.class,
+                    target.getUserDnResolver().getClass()
+                    );
+            assertEquals("compatibility with 0.1.0: configured for group.",
+                    SearchGroupResolver.class,
+                    target.getGroupResolver().getClass()
+                    );
+            SearchGroupResolver searchGroupResolver = (SearchGroupResolver)target.getGroupResolver();
+            assertEquals("compatibility with 0.1.0: configured for group.",
+                    "dc=example,dc=com",
+                    searchGroupResolver.getSearchBase()
+                    );
+            assertEquals("compatibility with 0.1.0: configured for group.",
+                    "ROLE_",
+                    searchGroupResolver.getPrefix()
+                    );
         }
     }
 }

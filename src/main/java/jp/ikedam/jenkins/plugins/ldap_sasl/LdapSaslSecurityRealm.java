@@ -368,14 +368,16 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
      */
     public Object readResolve()
     {
-        if(userDnResolver == null && groupResolver == null
-                && !StringUtils.isBlank(groupSearchBase))
+        if(groupSearchBase != null && groupPrefix != null)
         {
+            // configuration for 0.1.0
             userDnResolver = new LdapWhoamiUserDnResolver();
-            groupResolver = new SearchGroupResolver(
-                    groupSearchBase,
-                    groupPrefix
-            );
+            groupResolver = !StringUtils.isBlank(groupSearchBase)?
+                    new SearchGroupResolver(
+                            groupSearchBase,
+                            groupPrefix
+                    ):
+                    new NoGroupResolver();
             groupSearchBase = null;
             groupPrefix = null;
         }

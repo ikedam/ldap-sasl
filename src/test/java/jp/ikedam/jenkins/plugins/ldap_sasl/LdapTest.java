@@ -191,6 +191,23 @@ public class LdapTest
             UserDetails user = target.authenticate("test1", "password1");
             assertNotNull("Specifying non-exist dn", user);
         }
+        
+        // work with null resolvers
+        {
+            LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
+                    Arrays.asList(
+                            String.format("ldap://127.0.0.1:%d/dc=nosuchdc,dc=com", ldapPort)
+                            ),
+                    "DIGEST-MD5",
+                    null,
+                    null,
+                    0,
+                    3000
+                    );
+            
+            UserDetails user = target.authenticate("test1", "password1");
+            assertNotNull("work with null resolvers", user);
+        }
     }
     
     @Test
@@ -382,10 +399,10 @@ public class LdapTest
         {
             Level level = Logger.getLogger(LdapWhoamiUserDnResolver.class.getName()).getLevel();
             try{
-                // Suppress severe log
-                Logger.getLogger(LdapWhoamiUserDnResolver.class.getName()).setLevel(Level.OFF);
                 // Restart the server not to support LDAP who am i.
                 startLdapServer("config_nowhoami.ldif");
+                // Suppress warnings log
+                Logger.getLogger(LdapWhoamiUserDnResolver.class.getName()).setLevel(Level.SEVERE);
                 
                 LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
                         Arrays.asList(
