@@ -91,7 +91,7 @@ public class SearchUserDnResolver extends UserDnResolver implements Serializable
          */
         public FormValidation doCheckSearchBase(@QueryParameter String searchBase)
         {
-            if(StringUtils.isEmpty(searchBase))
+            if(StringUtils.isBlank(searchBase))
             {
                 return FormValidation.ok();
             }
@@ -116,7 +116,7 @@ public class SearchUserDnResolver extends UserDnResolver implements Serializable
          */
         public FormValidation doCheckSearchQueryTemplate(@QueryParameter String searchQueryTemplate)
         {
-            if(StringUtils.isEmpty(searchQueryTemplate))
+            if(StringUtils.isBlank(searchQueryTemplate))
             {
                 return FormValidation.error(Messages.SearchUserDnResolver_SearchQueryTemplate_empty());
             }
@@ -198,7 +198,7 @@ public class SearchUserDnResolver extends UserDnResolver implements Serializable
     public String getUserDn(LdapContext ctx, String username)
     {
         Logger logger = getLogger();
-        if(getSearchBase() == null || StringUtils.isEmpty(getSearchQueryTemplate()))
+        if(getSearchBase() == null || StringUtils.isBlank(getSearchQueryTemplate()))
         {
             // not configured.
             logger.severe("Not configured.");

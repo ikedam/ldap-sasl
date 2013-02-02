@@ -112,14 +112,14 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
         {
             AutoCompletionCandidates candidate = new AutoCompletionCandidates();
             String[] mechanisms = getMechanismCandidates();
-            String[] previousList = (previous != null)?previous.split(" +"):new String[0];
+            String[] previousList = (previous != null)?previous.split(SEPERATOR_PATTERN):new String[0];
             mechanism_loop:
             for(String mechanism: mechanisms){
-                if(value.isEmpty() || mechanism.toLowerCase().startsWith(value.toLowerCase())){
+                if(StringUtils.isBlank(value) || mechanism.toLowerCase().startsWith(value.toLowerCase())){
                     // This can be a candidate!
                     for(String test: previousList)
                     {
-                        if(!test.isEmpty() && test.equals(mechanism))
+                        if(!StringUtils.isBlank(test) && test.equals(mechanism))
                         {
                             // ignore this candidate if it is already input.
                             continue mechanism_loop;
@@ -167,7 +167,7 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
          */
         public FormValidation doCheckLdapUriList(@QueryParameter String ldapUriList)
         {
-            if(StringUtils.isEmpty(ldapUriList))
+            if(StringUtils.isBlank(ldapUriList))
             {
                 return FormValidation.error(Messages.LdapSaslSecurityRealm_LdapUriList_empty());
             }
@@ -182,7 +182,7 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
                 return FormValidation.error(Messages.LdapSaslSecurityRealm_LdapUriList_invalid(e.getMessage()));
             }
             
-            if(StringUtils.isEmpty(uri.getScheme())
+            if(StringUtils.isBlank(uri.getScheme())
                     || (!("ldap".equals(uri.getScheme().toLowerCase()))
                         && !("ldaps".equals(uri.getScheme().toLowerCase()))))
             {
@@ -190,7 +190,7 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
             }
             
             /* hostname is not required, use localhost for the default
-            if(StringUtils.isEmpty(uri.getHost()))
+            if(StringUtils.isBlank(uri.getHost()))
             {
                 return FormValidation.error(MessageFormat.format(Messages.LdapSaslSecurityRealm_LdapUriList_invalid(), "invalid host"));
             }
@@ -251,17 +251,30 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
          */
         public FormValidation doCheckMechanisms(@QueryParameter String mechanisms)
         {
-            if(StringUtils.isEmpty(mechanisms))
+            if(StringUtils.isBlank(mechanisms))
             {
                 return FormValidation.error(Messages.LdapSaslSecurityRealm_Mechanisms_empty());
             }
-            return FormValidation.ok();
+            
+            List<String> mechanismList = Arrays.asList(mechanisms.split(SEPERATOR_PATTERN));
+            
+            for(String m: mechanismList)
+            {
+                if(!StringUtils.isBlank(m))
+                {
+                    // contains at least one valid value
+                    return FormValidation.ok();
+                }
+            }
+            
+            return FormValidation.error(Messages.LdapSaslSecurityRealm_Mechanisms_empty());
         }
     }
-
-    private static final long serialVersionUID = 4771805355880928786L;
     
-    private List<String> ldapUriList = new ArrayList<String>();
+    private static final long serialVersionUID = 4771805355880928786L;
+    protected static final String SEPERATOR_PATTERN = "[\\s,]+";
+    
+    private List<String> ldapUriList;
     
     /**
      * Returns the list of LDAP URIs.
@@ -284,18 +297,21 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
     {
         List<String> validLdapUriList = new ArrayList<String>();
         DescriptorImpl descriptor = (DescriptorImpl)getDescriptor();
-        for(String uri: getLdapUriList())
+        if(getLdapUriList() != null)
         {
-            if(descriptor.doCheckLdapUriList(uri).kind != FormValidation.Kind.ERROR)
+            for(String uri: getLdapUriList())
             {
-                validLdapUriList.add(uri);
+                if(descriptor.doCheckLdapUriList(uri).kind != FormValidation.Kind.ERROR)
+                {
+                    validLdapUriList.add(uri);
+                }
             }
         }
         
         return !validLdapUriList.isEmpty()?StringUtils.join(validLdapUriList, " "):null;
     }
     
-    private List<String> mechanismList = new ArrayList<String>();
+    private List<String> mechanismList;
     
     /**
      * Returns the mechanisms to be used in SASL negotiation.
@@ -316,26 +332,6 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
      */
     public String getMechanisms(){
         return StringUtils.join(getMechanismList(), " ");
-    }
-    
-    /**
-     * Returns joined list of valid SASL mechanisms to be used in SASL negotiation.
-     * 
-     * Used to be passed to JNDI.
-     * 
-     * @returns a whitespace separated list of SASL mechanisms to be used in SASL negotiation. null if no mechanism specified.
-     */
-    public String getValidMechanisms()
-    {
-        List<String> validMechanismList = new ArrayList<String>();
-        for(String mechanism: getMechanismList())
-        {
-            if(!StringUtils.isEmpty(mechanism))
-            {
-                validMechanismList.add(mechanism);
-            }
-        }
-        return !validMechanismList.isEmpty()?StringUtils.join(validMechanismList, " "):null;
     }
     
     private UserDnResolver userDnResolver = null;
@@ -373,7 +369,7 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
     public Object readResolve()
     {
         if(userDnResolver == null && groupResolver == null
-                && !StringUtils.isEmpty(groupSearchBase))
+                && !StringUtils.isBlank(groupSearchBase))
         {
             userDnResolver = new LdapWhoamiUserDnResolver();
             groupResolver = new SearchGroupResolver(
@@ -434,11 +430,26 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
     )
     {
         this.ldapUriList = new ArrayList<String>();
-        for(String ldapUri: ldapUriList)
+        if(ldapUriList != null)
         {
-            this.ldapUriList.add(StringUtils.trim(ldapUri));
+            for(String ldapUri: ldapUriList)
+            {
+                if(!StringUtils.isBlank(ldapUri))
+                {
+                    this.ldapUriList.add(StringUtils.trim(ldapUri));
+                }
+            }
         }
-        this.mechanismList = Arrays.asList(mechanisms.split("[\\s,]+"));
+        
+        List<String> mechanismList = (mechanisms != null)?Arrays.asList(mechanisms.split(SEPERATOR_PATTERN)):new ArrayList<String>(0);
+        this.mechanismList = new ArrayList<String>();
+        for(String mechanism: mechanismList)
+        {
+            if(!StringUtils.isBlank(mechanism))
+            {
+                this.mechanismList.add(StringUtils.trim(mechanism));
+            }
+        }
         this.userDnResolver = userDnResolver;
         this.groupResolver = groupResolver;
         this.connectionTimeout = connectionTimeout;
@@ -460,14 +471,14 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
         
         // check configuration.
         String ldapUris = getValidLdapUris();
-        if(ldapUris == null)
+        if(StringUtils.isBlank(ldapUris))
         {
             logger.severe("No valid LDAP URI is specified.");
             throw new AuthenticationServiceException("No valid LDAP URI is specified.");
         }
         
-        String mechanisms = getValidMechanisms();
-        if(mechanisms == null)
+        String mechanisms = getMechanisms();
+        if(StringUtils.isBlank(mechanisms))
         {
             logger.severe("No valid mechanism is specified.");
             throw new AuthenticationServiceException("No valid mechanism is specified.");

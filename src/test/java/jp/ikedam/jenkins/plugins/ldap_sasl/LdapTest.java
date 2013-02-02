@@ -23,13 +23,11 @@
  */
 package jp.ikedam.jenkins.plugins.ldap_sasl;
 
-import hudson.model.Descriptor;
-import hudson.security.SecurityRealm;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.acegisecurity.AuthenticationServiceException;
 import org.acegisecurity.BadCredentialsException;
@@ -38,8 +36,10 @@ import org.acegisecurity.userdetails.UserDetails;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.For;
+import org.jvnet.hudson.test.JenkinsRule;
 import org.opends.server.types.DirectoryEnvironmentConfig;
 import org.opends.server.util.EmbeddedUtils;
 
@@ -50,27 +50,8 @@ import static org.junit.Assert.*;
  */
 public class LdapTest
 {
-    private class MockLdapSaslSecurityRealm extends LdapSaslSecurityRealm
-    {
-        private static final long serialVersionUID = 7570611809102088684L;
-        
-        public MockLdapSaslSecurityRealm(List<String> ldapUriList,
-                String mechanisms, UserDnResolver userDnResolver,
-                GroupResolver groupResolver, int connectionTimeout,
-                int readTimeout)
-        {
-            super(ldapUriList, mechanisms, userDnResolver, groupResolver,
-                    connectionTimeout, readTimeout);
-        }
-        
-        // For jenkins is not running,
-        // default getDescriptor() fails...
-        @Override
-        public Descriptor<SecurityRealm> getDescriptor()
-        {
-            return new LdapSaslSecurityRealm.DescriptorImpl();
-        }
-    }
+    @Rule
+    public JenkinsRule j = new JenkinsRule();
     
     static private int ldapPort = 8389;
     
@@ -137,7 +118,7 @@ public class LdapTest
     {
         // Supports DIGEST-MD5
         {
-            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+            LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
                     Arrays.asList(
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
@@ -162,7 +143,7 @@ public class LdapTest
         
         // Supports CRAM-MD5
         {
-            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+            LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
                     Arrays.asList(
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
@@ -179,7 +160,7 @@ public class LdapTest
         
         // Specifying non-exist mechanism and exist mechanism
         {
-            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+            LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
                     Arrays.asList(
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
@@ -196,7 +177,7 @@ public class LdapTest
         
         // Specifying non-exist dn
         {
-            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+            LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
                     Arrays.asList(
                             String.format("ldap://127.0.0.1:%d/dc=nosuchdc,dc=com", ldapPort)
                             ),
@@ -218,7 +199,7 @@ public class LdapTest
     {
         // Invalid credential
         {
-            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+            LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
                     Arrays.asList(
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
@@ -242,7 +223,7 @@ public class LdapTest
         
         // No valid URI
         {
-            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+            LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
                     new ArrayList<String>(),
                     "DIGEST-MD5",
                     new NoUserDnResolver(),
@@ -264,7 +245,7 @@ public class LdapTest
         
         // No valid mechanism
         {
-            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+            LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
                     Arrays.asList(
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
@@ -288,7 +269,7 @@ public class LdapTest
         
         // unavailable mechanism
         {
-            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+            LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
                     Arrays.asList(
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
@@ -312,12 +293,46 @@ public class LdapTest
     }
     
     @Test
+    @For(LdapSaslSecurityRealm.class)
+    public void testLdapSaslSecurityRealm_loadUserByUsername()
+    {
+        LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
+                Arrays.asList(
+                        String.format("ldap://127.0.0.1:%d/", ldapPort)
+                        ),
+                "DIGEST-MD5",
+                new NoUserDnResolver(),
+                new NoGroupResolver(),
+                0,
+                3000
+                );
+        assertNull(target.loadUserByUsername("test1"));
+    }
+    
+    @Test
+    @For(LdapSaslSecurityRealm.class)
+    public void testLdapSaslSecurityRealm_loadGroupByGroupname()
+    {
+        LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
+                Arrays.asList(
+                        String.format("ldap://127.0.0.1:%d/", ldapPort)
+                        ),
+                "DIGEST-MD5",
+                new NoUserDnResolver(),
+                new NoGroupResolver(),
+                0,
+                3000
+                );
+        assertNull(target.loadGroupByGroupname("Group1"));
+    }
+    
+    @Test
     @For(LdapWhoamiUserDnResolver.class)
     public void testLdapWhoamiUserDnResolver_Success()
     {
         // Succeed
         {
-            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+            LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
                     Arrays.asList(
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
@@ -339,28 +354,40 @@ public class LdapTest
     {
         // LDAP who am i is not allowed.
         {
-            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
-                    Arrays.asList(
-                            String.format("ldap://127.0.0.1:%d/", ldapPort)
-                            ),
-                    "DIGEST-MD5",
-                    new LdapWhoamiUserDnResolver(),
-                    new NoGroupResolver(),
-                    0,
-                    3000
-                    );
-            
-            LdapUser user = (LdapUser)target.authenticate("test3", "password3");
-            assertNull("LDAP who am i is not allowed", user.getDn());
+            Level level = Logger.getLogger(LdapWhoamiUserDnResolver.class.getName()).getLevel();
+            try{
+                // Suppress warning log
+                Logger.getLogger(LdapWhoamiUserDnResolver.class.getName()).setLevel(Level.SEVERE);
+                LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
+                        Arrays.asList(
+                                String.format("ldap://127.0.0.1:%d/", ldapPort)
+                                ),
+                        "DIGEST-MD5",
+                        new LdapWhoamiUserDnResolver(),
+                        new NoGroupResolver(),
+                        0,
+                        3000
+                        );
+                
+                LdapUser user = (LdapUser)target.authenticate("test3", "password3");
+                assertNull("LDAP who am i is not allowed", user.getDn());
+            }
+            finally
+            {
+                Logger.getLogger(LdapWhoamiUserDnResolver.class.getName()).setLevel(level);
+            }
         }
         
         // LDAP who am i is not supported.
         {
+            Level level = Logger.getLogger(LdapWhoamiUserDnResolver.class.getName()).getLevel();
             try{
+                // Suppress severe log
+                Logger.getLogger(LdapWhoamiUserDnResolver.class.getName()).setLevel(Level.OFF);
                 // Restart the server not to support LDAP who am i.
                 startLdapServer("config_nowhoami.ldif");
                 
-                LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+                LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
                         Arrays.asList(
                                 String.format("ldap://127.0.0.1:%d/", ldapPort)
                                 ),
@@ -376,6 +403,7 @@ public class LdapTest
             }
             finally
             {
+                Logger.getLogger(LdapWhoamiUserDnResolver.class.getName()).setLevel(level);
                 startLdapServer("config.ldif");
             }
         }
@@ -387,7 +415,7 @@ public class LdapTest
     {
         // Success
         {
-            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+            LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
                     Arrays.asList(
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
@@ -404,7 +432,7 @@ public class LdapTest
         
         // Success(other than uid)
         {
-            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+            LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
                     Arrays.asList(
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
@@ -421,7 +449,7 @@ public class LdapTest
         
         // Specifying searchbase in URI
         {
-            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+            LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
                     Arrays.asList(
                             String.format("ldap://127.0.0.1:%d/dc=example,dc=com", ldapPort)
                             ),
@@ -438,7 +466,7 @@ public class LdapTest
         
         // Specifying searchbase in URI and parameter
         {
-            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+            LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
                     Arrays.asList(
                             String.format("ldap://127.0.0.1:%d/dc=com", ldapPort)
                             ),
@@ -455,7 +483,7 @@ public class LdapTest
         
         // No searchbase
         {
-            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+            LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
                     Arrays.asList(
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
@@ -472,7 +500,7 @@ public class LdapTest
         
         // No parameter holder in query template
         {
-            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+            LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
                     Arrays.asList(
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
@@ -489,7 +517,7 @@ public class LdapTest
         
         // Complicated query
         {
-            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+            LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
                     Arrays.asList(
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
@@ -511,7 +539,7 @@ public class LdapTest
     {
         // No match
         {
-            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+            LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
                     Arrays.asList(
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
@@ -528,7 +556,7 @@ public class LdapTest
         
         // More than one match
         {
-            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+            LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
                     Arrays.asList(
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
@@ -545,58 +573,88 @@ public class LdapTest
         
         // Non exist DN(specified as a parameter)
         {
-            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
-                    Arrays.asList(
-                            String.format("ldap://127.0.0.1:%d/", ldapPort)
-                            ),
-                    "DIGEST-MD5",
-                    new SearchUserDnResolver("dc=example,dc=jp", "uid={0}"),
-                    new NoGroupResolver(),
-                    0,
-                    3000
-                    );
-            
-            LdapUser user = (LdapUser)target.authenticate("test1", "password1");
-            assertNull("Non exist DN(specified as a parameter)", user.getDn());
+            Level level = Logger.getLogger(SearchUserDnResolver.class.getName()).getLevel();
+            try
+            {
+                // Suppress severe log
+                Logger.getLogger(SearchUserDnResolver.class.getName()).setLevel(Level.OFF);
+                LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
+                        Arrays.asList(
+                                String.format("ldap://127.0.0.1:%d/", ldapPort)
+                                ),
+                        "DIGEST-MD5",
+                        new SearchUserDnResolver("dc=example,dc=jp", "uid={0}"),
+                        new NoGroupResolver(),
+                        0,
+                        3000
+                        );
+                
+                LdapUser user = (LdapUser)target.authenticate("test1", "password1");
+                assertNull("Non exist DN(specified as a parameter)", user.getDn());
+            }
+            finally
+            {
+                Logger.getLogger(SearchUserDnResolver.class.getName()).setLevel(level);
+            }
         }
         
         // Non exist DN(specified in URI)
         {
-            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
-                    Arrays.asList(
-                            String.format("ldap://127.0.0.1:%d/dc=example,dc=jp", ldapPort)
-                            ),
-                    "DIGEST-MD5",
-                    new SearchUserDnResolver(null, "uid={0}"),
-                    new NoGroupResolver(),
-                    0,
-                    3000
-                    );
-            
-            LdapUser user = (LdapUser)target.authenticate("test1", "password1");
-            assertNull("Non exist DN(specified in URI)", user.getDn());
+            Level level = Logger.getLogger(SearchUserDnResolver.class.getName()).getLevel();
+            try
+            {
+                // Suppress severe log
+                Logger.getLogger(SearchUserDnResolver.class.getName()).setLevel(Level.OFF);
+                LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
+                        Arrays.asList(
+                                String.format("ldap://127.0.0.1:%d/dc=example,dc=jp", ldapPort)
+                                ),
+                        "DIGEST-MD5",
+                        new SearchUserDnResolver(null, "uid={0}"),
+                        new NoGroupResolver(),
+                        0,
+                        3000
+                        );
+                
+                LdapUser user = (LdapUser)target.authenticate("test1", "password1");
+                assertNull("Non exist DN(specified in URI)", user.getDn());
+            }
+            finally
+            {
+                Logger.getLogger(SearchUserDnResolver.class.getName()).setLevel(level);
+            }
         }
         
         // Invalid DN
         {
-            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
-                    Arrays.asList(
-                            String.format("ldap://127.0.0.1:%d/dc=example,dc=jp", ldapPort)
-                            ),
-                    "DIGEST-MD5",
-                    new SearchUserDnResolver("hogehoge", "uid={0}"),
-                    new NoGroupResolver(),
-                    0,
-                    3000
-                    );
-            
-            LdapUser user = (LdapUser)target.authenticate("test1", "password1");
-            assertNull("Invalid DN", user.getDn());
+            Level level = Logger.getLogger(SearchUserDnResolver.class.getName()).getLevel();
+            try
+            {
+                // Suppress severe log
+                Logger.getLogger(SearchUserDnResolver.class.getName()).setLevel(Level.OFF);
+                LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
+                        Arrays.asList(
+                                String.format("ldap://127.0.0.1:%d/dc=example,dc=jp", ldapPort)
+                                ),
+                        "DIGEST-MD5",
+                        new SearchUserDnResolver("hogehoge", "uid={0}"),
+                        new NoGroupResolver(),
+                        0,
+                        3000
+                        );
+                
+                LdapUser user = (LdapUser)target.authenticate("test1", "password1");
+                assertNull("Invalid DN", user.getDn());
+            }
+            finally
+            {
+                Logger.getLogger(SearchUserDnResolver.class.getName()).setLevel(level);
+            }
         }
         
         // No query(null)
         {
-            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+            LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
                     Arrays.asList(
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
@@ -613,7 +671,7 @@ public class LdapTest
         
         // No query(empty)
         {
-            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+            LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
                     Arrays.asList(
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
@@ -630,19 +688,29 @@ public class LdapTest
         
         // Bad query
         {
-            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
-                    Arrays.asList(
-                            String.format("ldap://127.0.0.1:%d/", ldapPort)
-                            ),
-                    "DIGEST-MD5",
-                    new SearchUserDnResolver("dc=example,dc=com", "hogehoge"),
-                    new NoGroupResolver(),
-                    0,
-                    3000
-                    );
-            
-            LdapUser user = (LdapUser)target.authenticate("test1", "password1");
-            assertNull("Bad query", user.getDn());
+            Level level = Logger.getLogger(SearchUserDnResolver.class.getName()).getLevel();
+            try
+            {
+                // Suppress severe log
+                Logger.getLogger(SearchUserDnResolver.class.getName()).setLevel(Level.OFF);
+                LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
+                        Arrays.asList(
+                                String.format("ldap://127.0.0.1:%d/", ldapPort)
+                                ),
+                        "DIGEST-MD5",
+                        new SearchUserDnResolver("dc=example,dc=com", "hogehoge"),
+                        new NoGroupResolver(),
+                        0,
+                        3000
+                        );
+                
+                LdapUser user = (LdapUser)target.authenticate("test1", "password1");
+                assertNull("Bad query", user.getDn());
+            }
+            finally
+            {
+                Logger.getLogger(SearchUserDnResolver.class.getName()).setLevel(level);
+            }
         }
     }
     
@@ -652,7 +720,7 @@ public class LdapTest
     {
         // Success
         {
-            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+            LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
                     Arrays.asList(
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
@@ -675,7 +743,7 @@ public class LdapTest
         
         // Specifying prefix
         {
-            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+            LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
                     Arrays.asList(
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
@@ -696,7 +764,7 @@ public class LdapTest
         
         // Specifying DN in URI
         {
-            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+            LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
                     Arrays.asList(
                             String.format("ldap://127.0.0.1:%d/dc=example,dc=com", ldapPort)
                             ),
@@ -717,7 +785,7 @@ public class LdapTest
         
         // No DN
         {
-            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+            LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
                     Arrays.asList(
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
@@ -738,7 +806,7 @@ public class LdapTest
         
         // Specifying DN both in URI and parameter
         {
-            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+            LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
                     Arrays.asList(
                             String.format("ldap://127.0.0.1:%d/dc=com", ldapPort)
                             ),
@@ -759,12 +827,13 @@ public class LdapTest
         
         // No Group
         {
-            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+            LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
                     Arrays.asList(
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
                     "DIGEST-MD5",
-                    new LdapWhoamiUserDnResolver(),
+                    // Ldap who am i is not allowed for test3.
+                    new SearchUserDnResolver("dc=example,dc=com", "uid={0}"),
                     new SearchGroupResolver("dc=example,dc=com", null),
                     0,
                     3000
@@ -781,7 +850,7 @@ public class LdapTest
     {
         // User is not resolved
         {
-            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
+            LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
                     Arrays.asList(
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
@@ -798,53 +867,83 @@ public class LdapTest
         
         // Non-exist DN specified in parameter
         {
-            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
-                    Arrays.asList(
-                            String.format("ldap://127.0.0.1:%d/", ldapPort)
-                            ),
-                    "DIGEST-MD5",
-                    new LdapWhoamiUserDnResolver(),
-                    new SearchGroupResolver("dc=example,dc=jp", null),
-                    0,
-                    3000
-                    );
-            
-            LdapUser user = (LdapUser)target.authenticate("test1", "password1");
-            assertEquals("Non-exist DN specified in parameter", 0, user.getAuthorities().length);
+            Level level = Logger.getLogger(SearchGroupResolver.class.getName()).getLevel();
+            try
+            {
+                // Suppress warning log
+                Logger.getLogger(SearchGroupResolver.class.getName()).setLevel(Level.SEVERE);
+                LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
+                        Arrays.asList(
+                                String.format("ldap://127.0.0.1:%d/", ldapPort)
+                                ),
+                        "DIGEST-MD5",
+                        new LdapWhoamiUserDnResolver(),
+                        new SearchGroupResolver("dc=example,dc=jp", null),
+                        0,
+                        3000
+                        );
+                
+                LdapUser user = (LdapUser)target.authenticate("test1", "password1");
+                assertEquals("Non-exist DN specified in parameter", 0, user.getAuthorities().length);
+            }
+            finally
+            {
+                Logger.getLogger(SearchGroupResolver.class.getName()).setLevel(level);
+            }
         }
         
         // Non-exist DN specified in URI
         {
-            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
-                    Arrays.asList(
-                            String.format("ldap://127.0.0.1:%d/dc=example,dc=jp", ldapPort)
-                            ),
-                    "DIGEST-MD5",
-                    new LdapWhoamiUserDnResolver(),
-                    new SearchGroupResolver(null, null),
-                    0,
-                    3000
-                    );
-            
-            LdapUser user = (LdapUser)target.authenticate("test1", "password1");
-            assertEquals("Non-exist DN specified in URI", 0, user.getAuthorities().length);
+            Level level = Logger.getLogger(SearchGroupResolver.class.getName()).getLevel();
+            try
+            {
+                // Suppress warning log
+                Logger.getLogger(SearchGroupResolver.class.getName()).setLevel(Level.SEVERE);
+                LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
+                        Arrays.asList(
+                                String.format("ldap://127.0.0.1:%d/dc=example,dc=jp", ldapPort)
+                                ),
+                        "DIGEST-MD5",
+                        new LdapWhoamiUserDnResolver(),
+                        new SearchGroupResolver(null, null),
+                        0,
+                        3000
+                        );
+                
+                LdapUser user = (LdapUser)target.authenticate("test1", "password1");
+                assertEquals("Non-exist DN specified in URI", 0, user.getAuthorities().length);
+            }
+            finally
+            {
+                Logger.getLogger(SearchGroupResolver.class.getName()).setLevel(level);
+            }
         }
         
         // Invalid DN
         {
-            LdapSaslSecurityRealm target = new MockLdapSaslSecurityRealm(
-                    Arrays.asList(
-                            String.format("ldap://127.0.0.1:%d/", ldapPort)
-                            ),
-                    "DIGEST-MD5",
-                    new LdapWhoamiUserDnResolver(),
-                    new SearchGroupResolver("hogehoge", null),
-                    0,
-                    3000
-                    );
-            
-            LdapUser user = (LdapUser)target.authenticate("test1", "password1");
-            assertEquals("Invalid DN", 0, user.getAuthorities().length);
+            Level level = Logger.getLogger(SearchGroupResolver.class.getName()).getLevel();
+            try
+            {
+                // Suppress warning log
+                Logger.getLogger(SearchGroupResolver.class.getName()).setLevel(Level.SEVERE);
+                LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
+                        Arrays.asList(
+                                String.format("ldap://127.0.0.1:%d/", ldapPort)
+                                ),
+                        "DIGEST-MD5",
+                        new LdapWhoamiUserDnResolver(),
+                        new SearchGroupResolver("hogehoge", null),
+                        0,
+                        3000
+                        );
+                
+                LdapUser user = (LdapUser)target.authenticate("test1", "password1");
+                assertEquals("Invalid DN", 0, user.getAuthorities().length);
+            }
+            finally
+            {
+                Logger.getLogger(SearchGroupResolver.class.getName()).setLevel(level);
+            }
         }
     }
 }

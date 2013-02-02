@@ -87,7 +87,7 @@ public class SearchGroupResolver extends GroupResolver
          */
         public FormValidation doCheckSearchBase(@QueryParameter String searchBase)
         {
-            if(StringUtils.isEmpty(searchBase))
+            if(StringUtils.isBlank(searchBase))
             {
                 return FormValidation.ok();
             }
