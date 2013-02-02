@@ -51,7 +51,6 @@ import org.acegisecurity.AuthenticationException;
 import org.acegisecurity.AuthenticationServiceException;
 import org.acegisecurity.BadCredentialsException;
 import org.acegisecurity.GrantedAuthority;
-import org.acegisecurity.userdetails.User;
 import org.acegisecurity.userdetails.UserDetails;
 import org.acegisecurity.userdetails.UsernameNotFoundException;
 import org.apache.commons.lang.StringUtils;
@@ -508,23 +507,23 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
         }
         
         String userDn = (getUserDnResolver() != null)?getUserDnResolver().getUserDn(ctx, username):null;
-        logger.fine(String.format("User DN is %d", userDn));
+        logger.fine(String.format("User DN is %s", userDn));
         
         List<GrantedAuthority> authorities = (getGroupResolver() != null)?
                 getGroupResolver().resolveGroup(ctx, userDn, username):
                 new ArrayList<GrantedAuthority>();
         
         logger.fine("Authenticating succeeded.");
-        UserDetails user = new User(
+        return new LdapUser(
                 username,
                 "",         // password(not used)
+                userDn,     // dn of this user.
                 true,       // enabled
                 true,       // accountNonExpired
                 true,       // credentialsNonExpired
                 true,       // accountNonLocked
                 authorities.toArray(new GrantedAuthority[0])
         );
-        return user;
     }
     
     private Logger getLogger()

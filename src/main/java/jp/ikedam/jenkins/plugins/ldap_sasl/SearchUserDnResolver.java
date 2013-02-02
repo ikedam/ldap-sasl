@@ -93,7 +93,7 @@ public class SearchUserDnResolver extends UserDnResolver implements Serializable
         {
             if(StringUtils.isEmpty(searchBase))
             {
-                return FormValidation.error(Messages.SearchUserDnResolver_SearchBase_empty());
+                return FormValidation.ok();
             }
             
             try
@@ -181,8 +181,8 @@ public class SearchUserDnResolver extends UserDnResolver implements Serializable
             String searchQueryTemplate
     )
     {
-        this.searchBase = searchBase;
-        this.searchQueryTemplate = searchQueryTemplate;
+        this.searchBase = StringUtils.trimToEmpty(searchBase);
+        this.searchQueryTemplate = StringUtils.trim(searchQueryTemplate);
     }
     
     /**
@@ -198,8 +198,7 @@ public class SearchUserDnResolver extends UserDnResolver implements Serializable
     public String getUserDn(LdapContext ctx, String username)
     {
         Logger logger = getLogger();
-        
-        if(StringUtils.isEmpty(getSearchBase()) || StringUtils.isEmpty(getSearchQueryTemplate()))
+        if(getSearchBase() == null || StringUtils.isEmpty(getSearchQueryTemplate()))
         {
             // not configured.
             logger.severe("Not configured.");
@@ -214,7 +213,7 @@ public class SearchUserDnResolver extends UserDnResolver implements Serializable
             logger.fine(String.format("Searching users base=%s, username=%s", getSearchBase(), username));
             String query = MessageFormat.format(getSearchQueryTemplate(), username);
             NamingEnumeration<SearchResult> entries = ctx.search(getSearchBase(), query, searchControls);
-            if(entries.hasMore())
+            if(!entries.hasMore())
             {
                 // no entry.
                 logger.severe(String.format("User not found: %s", username));

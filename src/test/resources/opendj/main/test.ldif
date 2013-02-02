@@ -1,0 +1,44 @@
+dn: dc=example,dc=com
+objectClass: dcObject
+objectClass: organization
+o: LDAP for test
+dc: example
+
+dn: cn=Manager,dc=example,dc=com
+objectClass: organizationalRole
+cn: Manager
+
+dn: ou=People,dc=example,dc=com
+objectClass: organizationalUnit
+ou: People
+
+dn: ou=Group,dc=example,dc=com
+objectClass: organizationalUnit
+ou: Group
+
+dn: cn=User1,ou=People,dc=example,dc=com
+objectClass: person
+objectClass: inetOrgPerson
+cn: User1
+sn: Test
+uid: test1
+mail: test1@example.com
+userPassword: {Clear}password1
+
+dn: cn=User2,ou=People,dc=example,dc=com
+objectClass: person
+objectClass: inetOrgPerson
+cn: User2
+sn: Test
+uid: test2
+mail: test2@example.com
+userPassword: {Clear}password2
+
+dn: cn=User3,ou=People,dc=example,dc=com
+objectClass: person
+objectClass: inetOrgPerson
+cn: User3
+sn: test2
+uid: test3
+mail: test3@example.com
+userPassword: {Clear}password3

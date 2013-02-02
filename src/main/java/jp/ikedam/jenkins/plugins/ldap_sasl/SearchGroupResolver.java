@@ -89,7 +89,7 @@ public class SearchGroupResolver extends GroupResolver
         {
             if(StringUtils.isEmpty(searchBase))
             {
-                return FormValidation.error(Messages.SearchGroupResolver_SearchBase_empty());
+                return FormValidation.ok();
             }
             
             try
@@ -163,7 +163,7 @@ public class SearchGroupResolver extends GroupResolver
             String prefix
     )
     {
-        this.searchBase = StringUtils.trim(searchBase);
+        this.searchBase = StringUtils.trimToEmpty(searchBase);
         this.prefix = StringUtils.trim(prefix);
     }
     
@@ -185,9 +185,11 @@ public class SearchGroupResolver extends GroupResolver
         
         Logger logger = getLogger();
         
-        if(getSearchBase() == null || getSearchBase().isEmpty())
+        if(getSearchBase() == null)
         {
-            logger.warning("Group cannot be resolved: groupSearchBase is not specified.");
+            // not configured.
+            logger.severe("Not configured.");
+            
             return authorities;
         }
         
