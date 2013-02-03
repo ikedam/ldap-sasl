@@ -1,10 +1,10 @@
 <div>
-<p>The query send to the LDAP server to search groups. {0} is replaced with the name of the authenticated user. Treated as MessageFormat string.</p>
+<p>The query send to the LDAP server to search groups. Variable uid is replaced with the name of the authenticated user.</p>
 <p>Here is a examples:</p>
 <dl>
-    <dt>uid={0}</dt>
+    <dt>uid=${uid}</dt>
         <dd>Used in standard LDAP servers.</dd>
-    <dt>sAMAccountName={0}</dt>
+    <dt>sAMAccountName=${uid}</dt>
         <dd>Used in LDAP servers compatible with Active Directory.</dd>
 </dl>
 </div>

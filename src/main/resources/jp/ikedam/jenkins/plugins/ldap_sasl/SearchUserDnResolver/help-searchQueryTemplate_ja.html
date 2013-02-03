@@ -1,10 +1,10 @@
 <div>
-<p>LDAPサーバに送信するクエリを指定します。{0} は認証したユーザ名に置き換わります。MessageFormatの文字列として扱われます。</p>
+<p>LDAPサーバに送信するクエリを指定します。変数 uid は認証したユーザ名に置き換わります。</p>
 <p>例:</p>
 <dl>
-    <dt>uid={0}</dt>
+    <dt>uid=${uid}</dt>
         <dd>標準的なLDAPサーバで使用されるクエリです。</dd>
-    <dt>sAMAccountName={0}</dt>
+    <dt>sAMAccountName=${uid}</dt>
         <dd>Active Directory互換の環境で使用されるクエリです。</dd>
 </dl>
 </div>

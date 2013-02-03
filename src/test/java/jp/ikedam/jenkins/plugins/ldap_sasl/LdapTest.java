@@ -437,7 +437,7 @@ public class LdapTest
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
                     "DIGEST-MD5",
-                    new SearchUserDnResolver("dc=example,dc=com", "uid={0}"),
+                    new SearchUserDnResolver("dc=example,dc=com", "uid=${uid}"),
                     new NoGroupResolver(),
                     0,
                     3000
@@ -454,7 +454,7 @@ public class LdapTest
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
                     "DIGEST-MD5",
-                    new SearchUserDnResolver("dc=example,dc=com", "sn={0}"),
+                    new SearchUserDnResolver("dc=example,dc=com", "sn=${uid}"),
                     new NoGroupResolver(),
                     0,
                     3000
@@ -471,7 +471,7 @@ public class LdapTest
                             String.format("ldap://127.0.0.1:%d/dc=example,dc=com", ldapPort)
                             ),
                     "DIGEST-MD5",
-                    new SearchUserDnResolver("", "uid={0}"),
+                    new SearchUserDnResolver("", "uid=${uid}"),
                     new NoGroupResolver(),
                     0,
                     3000
@@ -488,7 +488,7 @@ public class LdapTest
                             String.format("ldap://127.0.0.1:%d/dc=com", ldapPort)
                             ),
                     "DIGEST-MD5",
-                    new SearchUserDnResolver("dc=example", "uid={0}"),
+                    new SearchUserDnResolver("dc=example", "uid=${uid}"),
                     new NoGroupResolver(),
                     0,
                     3000
@@ -505,7 +505,7 @@ public class LdapTest
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
                     "DIGEST-MD5",
-                    new SearchUserDnResolver(null, "uid={0}"),
+                    new SearchUserDnResolver(null, "uid=${uid}"),
                     new NoGroupResolver(),
                     0,
                     3000
@@ -539,7 +539,7 @@ public class LdapTest
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
                     "DIGEST-MD5",
-                    new SearchUserDnResolver("dc=example,dc=com", "(| (& (objectClass=inetOrgPerson) (uid={0})) (& (objectClass=person) (uid={0})))"),
+                    new SearchUserDnResolver("dc=example,dc=com", "(| (& (objectClass=inetOrgPerson) (uid=${uid})) (& (objectClass=person) (uid=${uid})))"),
                     new NoGroupResolver(),
                     0,
                     3000
@@ -561,7 +561,7 @@ public class LdapTest
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
                     "DIGEST-MD5",
-                    new SearchUserDnResolver("dc=example,dc=com", "cn={0}"),
+                    new SearchUserDnResolver("dc=example,dc=com", "cn=${uid}"),
                     new NoGroupResolver(),
                     0,
                     3000
@@ -600,7 +600,7 @@ public class LdapTest
                                 String.format("ldap://127.0.0.1:%d/", ldapPort)
                                 ),
                         "DIGEST-MD5",
-                        new SearchUserDnResolver("dc=example,dc=jp", "uid={0}"),
+                        new SearchUserDnResolver("dc=example,dc=jp", "uid=${uid}"),
                         new NoGroupResolver(),
                         0,
                         3000
@@ -627,7 +627,7 @@ public class LdapTest
                                 String.format("ldap://127.0.0.1:%d/dc=example,dc=jp", ldapPort)
                                 ),
                         "DIGEST-MD5",
-                        new SearchUserDnResolver(null, "uid={0}"),
+                        new SearchUserDnResolver(null, "uid=${uid}"),
                         new NoGroupResolver(),
                         0,
                         3000
@@ -654,7 +654,7 @@ public class LdapTest
                                 String.format("ldap://127.0.0.1:%d/dc=example,dc=jp", ldapPort)
                                 ),
                         "DIGEST-MD5",
-                        new SearchUserDnResolver("hogehoge", "uid={0}"),
+                        new SearchUserDnResolver("hogehoge", "uid=${uid}"),
                         new NoGroupResolver(),
                         0,
                         3000
@@ -850,7 +850,7 @@ public class LdapTest
                             ),
                     "DIGEST-MD5",
                     // Ldap who am i is not allowed for test3.
-                    new SearchUserDnResolver("dc=example,dc=com", "uid={0}"),
+                    new SearchUserDnResolver("dc=example,dc=com", "uid=${uid}"),
                     new SearchGroupResolver("dc=example,dc=com", null),
                     0,
                     3000

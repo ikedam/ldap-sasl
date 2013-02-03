@@ -38,7 +38,7 @@ public class SearchUserDnResolverSimpleTest
         // constructor parameters are saved
         {
             String searchBase = "dc=example,dc=com";
-            String queryTemplate = "uid={0}";
+            String queryTemplate = "uid=${uid}";
             
             SearchUserDnResolver target = new SearchUserDnResolver(
                     searchBase,
@@ -52,7 +52,7 @@ public class SearchUserDnResolverSimpleTest
         // trimmed
         {
             String searchBase = "  dc=example,dc=com  ";
-            String queryTemplate = "  uid={0}  ";
+            String queryTemplate = "  uid=${uid}  ";
             
             SearchUserDnResolver target = new SearchUserDnResolver(
                     searchBase,
@@ -60,7 +60,7 @@ public class SearchUserDnResolverSimpleTest
                     );
             
             assertEquals("trimmed", "dc=example,dc=com", target.getSearchBase());
-            assertEquals("trimmed", "uid={0}", target.getSearchQueryTemplate());
+            assertEquals("trimmed", "uid=${uid}", target.getSearchQueryTemplate());
         }
     }
 }

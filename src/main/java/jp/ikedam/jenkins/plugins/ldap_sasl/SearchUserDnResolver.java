@@ -24,11 +24,13 @@
 package jp.ikedam.jenkins.plugins.ldap_sasl;
 
 import hudson.Extension;
+import hudson.Util;
 import hudson.model.Descriptor;
 import hudson.util.FormValidation;
 
 import java.io.Serializable;
-import java.text.MessageFormat;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -121,17 +123,10 @@ public class SearchUserDnResolver extends UserDnResolver implements Serializable
                 return FormValidation.error(Messages.SearchUserDnResolver_SearchQueryTemplate_empty());
             }
             
-            String testString;
-            try
-            {
-                testString = MessageFormat.format(searchQueryTemplate, "Dummy");
-            }
-            catch(IllegalArgumentException e)
-            {
-                // Failed to parse the format...
-                return FormValidation.error(Messages.SearchUserDnResolver_SearchQueryTemplate_invalid(e.getMessage()));
-            }
-            if(testString.equals(searchQueryTemplate))
+            
+            String testString1 = SearchUserDnResolver.expandUsername(searchQueryTemplate, "dummy1");
+            String testString2 = SearchUserDnResolver.expandUsername(searchQueryTemplate, "dummy2");
+            if(testString1.equals(testString2))
             {
                 return FormValidation.error(Messages.SearchUserDnResolver_SearchQueryTemplate_invalid("Specify \"{0}\" where to replace with the username."));
             }
@@ -211,7 +206,7 @@ public class SearchUserDnResolver extends UserDnResolver implements Serializable
             SearchControls searchControls = new SearchControls();
             searchControls.setSearchScope(SearchControls.SUBTREE_SCOPE);
             logger.fine(String.format("Searching users base=%s, username=%s", getSearchBase(), username));
-            String query = MessageFormat.format(getSearchQueryTemplate(), username);
+            String query = expandUsername(getSearchQueryTemplate(), username);
             NamingEnumeration<SearchResult> entries = ctx.search((getSearchBase() != null)?getSearchBase():"", query, searchControls);
             if(!entries.hasMore())
             {
@@ -237,5 +232,18 @@ public class SearchUserDnResolver extends UserDnResolver implements Serializable
             logger.log(Level.SEVERE, "Failed to search a user", e);
             return null;
         }
+    }
+
+    /**
+     * Expand ${uid} in template
+     * 
+     * @param username uid value
+     * @return ${uid} expanded string
+     */
+    static private String expandUsername(String template, String username)
+    {
+        Map<String,String> variables = new HashMap<String,String>();
+        variables.put("uid", username);
+        return Util.replaceMacro(template, variables);
     }
 }

@@ -112,7 +112,7 @@ public class SearchUserDnResolverJenkinsTest
         {
             assertEquals("contains a place holder",
                     FormValidation.Kind.OK,
-                    descriptor.doCheckSearchQueryTemplate("uid={0}").kind
+                    descriptor.doCheckSearchQueryTemplate("uid=${uid}").kind
                     );
         }
         
@@ -120,7 +120,7 @@ public class SearchUserDnResolverJenkinsTest
         {
             assertEquals("contains multiple holders",
                     FormValidation.Kind.OK,
-                    descriptor.doCheckSearchQueryTemplate("(| (uid={0}) (uid={0}))").kind
+                    descriptor.doCheckSearchQueryTemplate("(| (uid=${uid}) (uid=${uid}))").kind
                     );
         }
         
@@ -128,7 +128,7 @@ public class SearchUserDnResolverJenkinsTest
         {
             assertEquals("invalid format(not checked)",
                     FormValidation.Kind.OK,
-                    descriptor.doCheckSearchQueryTemplate("((({0}").kind
+                    descriptor.doCheckSearchQueryTemplate("(((${uid}").kind
                     );
         }
     }
@@ -173,15 +173,7 @@ public class SearchUserDnResolverJenkinsTest
         {
             assertEquals("contains non usable holder",
                     FormValidation.Kind.ERROR,
-                    descriptor.doCheckSearchQueryTemplate("uid={1}").kind
-                    );
-        }
-        
-        // Bad Message Format
-        {
-            assertEquals("Bad Message Format",
-                    FormValidation.Kind.ERROR,
-                    descriptor.doCheckSearchQueryTemplate("{{0}}").kind
+                    descriptor.doCheckSearchQueryTemplate("uid=${foobar}").kind
                     );
         }
     }
