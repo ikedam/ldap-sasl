@@ -181,7 +181,7 @@ public class SearchUserDnResolver extends UserDnResolver implements Serializable
             String searchQueryTemplate
     )
     {
-        this.searchBase = StringUtils.trimToEmpty(searchBase);
+        this.searchBase = StringUtils.trim(searchBase);
         this.searchQueryTemplate = StringUtils.trim(searchQueryTemplate);
     }
     
@@ -198,7 +198,7 @@ public class SearchUserDnResolver extends UserDnResolver implements Serializable
     public String getUserDn(LdapContext ctx, String username)
     {
         Logger logger = getLogger();
-        if(getSearchBase() == null || StringUtils.isBlank(getSearchQueryTemplate()))
+        if(StringUtils.isBlank(getSearchQueryTemplate()))
         {
             // not configured.
             logger.severe("Not configured.");
@@ -212,7 +212,7 @@ public class SearchUserDnResolver extends UserDnResolver implements Serializable
             searchControls.setSearchScope(SearchControls.SUBTREE_SCOPE);
             logger.fine(String.format("Searching users base=%s, username=%s", getSearchBase(), username));
             String query = MessageFormat.format(getSearchQueryTemplate(), username);
-            NamingEnumeration<SearchResult> entries = ctx.search(getSearchBase(), query, searchControls);
+            NamingEnumeration<SearchResult> entries = ctx.search((getSearchBase() != null)?getSearchBase():"", query, searchControls);
             if(!entries.hasMore())
             {
                 // no entry.
