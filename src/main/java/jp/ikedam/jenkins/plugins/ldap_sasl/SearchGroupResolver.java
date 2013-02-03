@@ -110,7 +110,7 @@ public class SearchGroupResolver extends GroupResolver
          * @param prefix
          * @return
          */
-        public FormValidation doPrefix(@QueryParameter String prefix)
+        public FormValidation doCheckPrefix(@QueryParameter String prefix)
         {
             // no validation is performed.
             return FormValidation.ok();
@@ -163,7 +163,7 @@ public class SearchGroupResolver extends GroupResolver
             String prefix
     )
     {
-        this.searchBase = StringUtils.trimToEmpty(searchBase);
+        this.searchBase = StringUtils.trim(searchBase);
         this.prefix = StringUtils.trim(prefix);
     }
     
@@ -185,14 +185,6 @@ public class SearchGroupResolver extends GroupResolver
         
         Logger logger = getLogger();
         
-        if(getSearchBase() == null)
-        {
-            // not configured.
-            logger.severe("Not configured.");
-            
-            return authorities;
-        }
-        
         if(dn == null)
         {
             logger.warning("Group cannot be resolved: DN of the user is not resolved!");
@@ -204,7 +196,7 @@ public class SearchGroupResolver extends GroupResolver
             SearchControls searchControls = new SearchControls();
             searchControls.setSearchScope(SearchControls.SUBTREE_SCOPE);
             logger.fine(String.format("Searching groups base=%s, dn=%s", getSearchBase(), dn));
-            NamingEnumeration<SearchResult> entries = ctx.search(getSearchBase(), getGroupSearchQuery(dn), searchControls);
+            NamingEnumeration<SearchResult> entries = ctx.search((getSearchBase() != null)?getSearchBase():"", getGroupSearchQuery(dn), searchControls);
             while(entries.hasMore()){
                 SearchResult entry = entries.next();
                 String groupName = entry.getAttributes().get("cn").get().toString();

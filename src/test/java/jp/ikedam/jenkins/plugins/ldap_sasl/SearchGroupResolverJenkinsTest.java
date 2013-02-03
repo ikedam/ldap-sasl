@@ -32,23 +32,23 @@ import org.jvnet.hudson.test.JenkinsRule;
 import static org.junit.Assert.*;
 
 /**
- * Tests for SearchUserDnResolver concerned with Jenkins
+ * Tests for SearchGroupResolver, concerned with Jenkins
  */
-public class SearchUserDnResolverJenkinsTest
+public class SearchGroupResolverJenkinsTest
 {
     @Rule
     public JenkinsRule j = new JenkinsRule();
     
-    private SearchUserDnResolver.DescriptorImpl getDescriptor()
+    private SearchGroupResolver.DescriptorImpl getDescriptor()
     {
-        return (SearchUserDnResolver.DescriptorImpl)new SearchUserDnResolver(null, null).getDescriptor();
-        //return new SearchUserDnResolver.DescriptorImpl();
+        return (SearchGroupResolver.DescriptorImpl)new SearchGroupResolver(null, null).getDescriptor();
+        //return new SearchGroupResolver.DescriptorImpl();
     }
     
     @Test
-    public void testDescriptorDoCheckSearchBase_Success()
+    public void DescriptorDoCheckSearchBase_Success()
     {
-        SearchUserDnResolver.DescriptorImpl descriptor = getDescriptor();
+        SearchGroupResolver.DescriptorImpl descriptor = getDescriptor();
         // null
         {
             assertEquals("null",
@@ -91,9 +91,9 @@ public class SearchUserDnResolverJenkinsTest
     }
     
     @Test
-    public void testDescriptorDoCheckSearchBase_Failure()
+    public void DescriptorDoCheckSearchBase_Failure()
     {
-        SearchUserDnResolver.DescriptorImpl descriptor = getDescriptor();
+        SearchGroupResolver.DescriptorImpl descriptor = getDescriptor();
         // invalid format
         {
             assertEquals("invalid format",
@@ -104,77 +104,47 @@ public class SearchUserDnResolverJenkinsTest
     }
     
     @Test
-    public void testDoCheckSearchQueryTemplate_Success()
+    public void DescriptorDoCheckPrefix_Success()
     {
-        SearchUserDnResolver.DescriptorImpl descriptor = getDescriptor();
-        
-        // contains a place holder
+        SearchGroupResolver.DescriptorImpl descriptor = getDescriptor();
+        // simple value
         {
-            assertEquals("contains a place holder",
+            assertEquals("simple value",
                     FormValidation.Kind.OK,
-                    descriptor.doCheckSearchQueryTemplate("uid=${uid}").kind
+                    descriptor.doCheckPrefix("ROLE_").kind
                     );
         }
         
-        // contains multiple holders
-        {
-            assertEquals("contains multiple holders",
-                    FormValidation.Kind.OK,
-                    descriptor.doCheckSearchQueryTemplate("(| (uid=${uid}) (uid=${uid}))").kind
-                    );
-        }
-        
-        // invalid format(not checked)
-        {
-            assertEquals("invalid format(not checked)",
-                    FormValidation.Kind.OK,
-                    descriptor.doCheckSearchQueryTemplate("(((${uid}").kind
-                    );
-        }
-    }
-    
-    @Test
-    public void testDoCheckSearchQueryTemplate_Failure()
-    {
-        SearchUserDnResolver.DescriptorImpl descriptor = getDescriptor();
         // null
         {
             assertEquals("null",
-                    FormValidation.Kind.ERROR,
-                    descriptor.doCheckSearchQueryTemplate(null).kind
+                    FormValidation.Kind.OK,
+                    descriptor.doCheckPrefix(null).kind
                     );
         }
         
         // empty
         {
             assertEquals("empty",
-                    FormValidation.Kind.ERROR,
-                    descriptor.doCheckSearchQueryTemplate("").kind
+                    FormValidation.Kind.OK,
+                    descriptor.doCheckPrefix("").kind
                     );
         }
         
         // blank
         {
             assertEquals("blank",
-                    FormValidation.Kind.ERROR,
-                    descriptor.doCheckSearchQueryTemplate("  ").kind
-                    );
-        }
-        
-        // contains no holder
-        {
-            assertEquals("contains no holder",
-                    FormValidation.Kind.ERROR,
-                    descriptor.doCheckSearchQueryTemplate("uid=hogehoge").kind
-                    );
-        }
-        
-        // contains non usable holder
-        {
-            assertEquals("contains non usable holder",
-                    FormValidation.Kind.ERROR,
-                    descriptor.doCheckSearchQueryTemplate("uid=${foobar}").kind
+                    FormValidation.Kind.OK,
+                    descriptor.doCheckPrefix("  ").kind
                     );
         }
     }
+    
+    @Test
+    public void DescriptorDoCheckPrefix_Failure()
+    {
+        // Nothing to do
+    }
+    
+    
 }
