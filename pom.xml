@@ -95,12 +95,12 @@
     <repository>
       <id>internal.repo.release</id>
       <name>Internal Repository for Release</name>
-      <url>file:///${basedir}/release</url>
+      <url>${internal.repo.path}/releases</url>
     </repository>
     <snapshotRepository>
       <id>internal.repo.snapshot</id>
       <name>Internal Repository for snapshot</name>
-      <url>file:///${basedir}/snapshot</url>
+      <url>${internal.repo.path}/snapshots</url>
     </snapshotRepository>
   </distributionManagement>
 </project>
