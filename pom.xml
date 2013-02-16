@@ -8,13 +8,12 @@
   
   <groupId>jp.ikedam.jenkins.plugins</groupId>
   <artifactId>ldap-sasl</artifactId>
-  <version>0.9.3-SNAPSHOT</version>
+  <version>1.0.0-SNAPSHOT</version>
   <packaging>hpi</packaging>
   <name>LDAP SASL plugin</name>
   <description>Authenticate users using a LDAP server with SASL mechanism.</description>
   
-  <url>http://dev.ikedam.jp/jenkins/ldap-sasl/</url>
-  <!--<url>https://wiki.jenkins-ci.org/display/JENKINS/LDAP+SASL+plugin</url>-->
+  <url>https://github.com/ikedam/ldap-sasl</url>
   
   <scm>
     <connection>scm:git:git://github.com/ikedam/${project.artifactId}.git</connection>

@@ -26,7 +26,14 @@ LDAP SASL は、「LDAP-SASL」ユーザー情報を追加する [Jenkins](http:
 		* ベースDN、グループ名に付加するプリフィクスを指定します。
 		* 例えばプリフィクスとして「ROLE_」を指定すると、LDAPディレクトリ内での「group1」というグループ名は、Jenkins内では「ROLE_group1」などとして使用されます。
 
+インストール方法
+----------------
+
+[Jenkins update center for ikedam plugins](http://ikedam.github.com/jenkins-update-center/) の手順に従い、Jenkinsが私のアップデートセンターにアクセスできるようにしてください。
+
+
 制限事項
 --------
 
 * LDAPSの使用はテストされていません。
+* このプラグインはいつの日か [LDAP plugin](https://wiki.jenkins-ci.org/display/JENKINS/LDAP+Plugin) がSASLをサポートしたら用済みになります。
