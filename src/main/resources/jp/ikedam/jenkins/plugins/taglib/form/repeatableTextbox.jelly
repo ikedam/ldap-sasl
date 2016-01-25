@@ -51,7 +51,7 @@ THE SOFTWARE.
 <div class="repeated-container${!empty(header)?' with-drag-drop':''}">
 <!-- The first DIV is the master copy. -->
 <!-- The error message is written into second td, so the first td is dummy. -->
-<div class="repeated-chunk to-be-removed">
+<div class="repeated-chunk to-be-removed" name="">
     <j:if test="${!empty(header)}"><div class="dd-handle">${header}</div></j:if>
     <table style="width: 100%;">
     <tr><td style="display: none;" /><td style="vertical-align: middle; width: 100%;">
