@@ -23,25 +23,16 @@
  */
 package jp.ikedam.jenkins.plugins.ldap_sasl;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.Arrays;
+import java.util.List;
 
-import jenkins.model.Jenkins;
-
-import hudson.XmlFile;
 import hudson.model.AutoCompletionCandidates;
 import hudson.util.FormValidation;
 
-import org.apache.commons.lang.StringUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.JenkinsRule.WebClient;
-import org.xml.sax.SAXException;
 
 import static org.junit.Assert.*;
 
@@ -387,10 +378,14 @@ public class LdapSaslSecurityRealmJenkinsTest
                             "ldaps:///"
                     ),
                     null,
-                    null,
-                    null,
                     0,
-                    0
+                    0,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
                     );
             assertEquals("filters bad uris", "ldap:/// ldaps:///", target.getValidLdapUris());
         }
@@ -403,10 +398,14 @@ public class LdapSaslSecurityRealmJenkinsTest
                             new String("http:///")
                     ),
                     null,
-                    null,
-                    null,
                     0,
-                    0
+                    0,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
                     );
             assertNull("when all are filtered", target.getValidLdapUris());
         }
@@ -416,80 +415,50 @@ public class LdapSaslSecurityRealmJenkinsTest
             LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
                     null,
                     null,
-                    null,
-                    null,
                     0,
-                    0
+                    0,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
                     );
             assertNull("work with null", target.getValidLdapUris());
         }
     }
     
     @Test
-    public void testView() throws IOException, SAXException
+    public void testConfiguration() throws Exception
     {
-        // Test no HTML exception occurs
-        {
-            WebClient wc = j.createWebClient();
-            wc.goTo("configure");
-        }
-    }
-    
-    private File getResource(String name) throws URISyntaxException, FileNotFoundException
-    {
-        String filename = String.format("%s/%s", StringUtils.join(getClass().getName().split("\\."), "/"), name);
-        URL url = ClassLoader.getSystemResource(filename);
-        if(url == null)
-        {
-            throw new FileNotFoundException(String.format("Not found: %s", filename));
-        }
-        return new File(url.toURI());
-    }
-    
-    @Test
-    public void testReadResolve() throws URISyntaxException, IOException
-    {
-        // compatibility with 0.1.0: no configuration for group.
-        {
-            XmlFile xmlFile = new XmlFile(
-                    Jenkins.XSTREAM,
-                    getResource("config-0.1.0_01.xml")
-                    );
-            LdapSaslSecurityRealm target = (LdapSaslSecurityRealm)xmlFile.read();
-            assertEquals("compatibility with 0.1.0: no configuration for group.",
-                    LdapWhoamiUserDnResolver.class,
-                    target.getUserDnResolver().getClass()
-                    );
-            assertEquals("compatibility with 0.1.0: no configuration for group.",
-                    NoGroupResolver.class,
-                    target.getGroupResolver().getClass()
-                    );
-        }
+        List<String> ldapUriList = Arrays.asList("ldap:///", "ldaps:///");
+        String mechanisms = "DIGEST-MD5 CRAM-MD5";
+        int connectionTimeout = 100;
+        int readTimeout = 30;
+        String userSearchBase = "ou=People,dc=example,dc=jp";
+        String userQueryTemplate = "uid=${uid}";
+        String groupSearchBase = "ou=Groups,dc=example,dc=jp";
+        String groupPrefix = "ROLE_";
+        String queryUser = "querier";
+        String queryPassword = "secret";
         
-        // compatibility with 0.1.0: configured for group.
-        {
-            XmlFile xmlFile = new XmlFile(
-                    Jenkins.XSTREAM,
-                    getResource("config-0.1.0_02.xml")
-                    );
-            LdapSaslSecurityRealm target = (LdapSaslSecurityRealm)xmlFile.read();
-            assertEquals("compatibility with 0.1.0: configured for group.",
-                    LdapWhoamiUserDnResolver.class,
-                    target.getUserDnResolver().getClass()
-                    );
-            assertEquals("compatibility with 0.1.0: configured for group.",
-                    SearchGroupResolver.class,
-                    target.getGroupResolver().getClass()
-                    );
-            SearchGroupResolver searchGroupResolver = (SearchGroupResolver)target.getGroupResolver();
-            assertEquals("compatibility with 0.1.0: configured for group.",
-                    "dc=example,dc=com",
-                    searchGroupResolver.getSearchBase()
-                    );
-            assertEquals("compatibility with 0.1.0: configured for group.",
-                    "ROLE_",
-                    searchGroupResolver.getPrefix()
-                    );
-        }
+        LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
+                ldapUriList,
+                mechanisms,
+                connectionTimeout,
+                readTimeout,
+                userSearchBase,
+                userQueryTemplate,
+                groupSearchBase,
+                groupPrefix,
+                queryUser,
+                queryPassword
+        );
+        
+        j.jenkins.setSecurityRealm(target);
+        WebClient wc = j.createWebClient();
+        j.submit(wc.goTo("configure").getFormByName("config"));
+        
+        j.assertEqualDataBoundBeans(target, j.jenkins.getSecurityRealm());
     }
 }

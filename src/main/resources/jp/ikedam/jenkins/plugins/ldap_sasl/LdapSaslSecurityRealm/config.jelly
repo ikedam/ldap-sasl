@@ -30,69 +30,23 @@ THE SOFTWARE.
         <st:adjunct includes="jp.ikedam.jenkins.plugins.ldap_sasl.LdapSaslSecurityRealm.mechAutocomplete.mechAutocomplete"/>
         <f:textbox autoCompleteDelimChar=" " clazz="mech-auto-complete" />
     </f:entry>
-    <f:entry title="${%Resolve User DN}" field="userDnResolver">
-        <table width="100%">
-        <j:forEach
-                var="curDescriptor"
-                items="${descriptor.userDnResolverList.iterator()}"
-                varStatus="loop">
-            <j:scope>
-            <j:set
-                var="userDnResolver"
-                value="${curDescriptor==instance.userDnResolver.descriptor?instance.userDnResolver:null}"
-            />
-            <f:radioBlock
-                title="${curDescriptor.displayName}"
-                name="userDnResolver"
-                value="${loop.index}"
-                checked="${userDnResolver != null || (instance.userDnResolver == null &amp;&amp; loop.index == 0)}"
-                help="${curDescriptor.helpFile}"
-            ><j:scope>
-                <!-- Shown only when corresponding UserDnResolver is selected. -->
-                <j:set var="descriptor" value="${curDescriptor}" />
-                <j:set var="instance" value="${userDnResolver}" />
-                <!--
-                    Call config.jelly of the UserDnResolver subclass.
-                    Do nothing if config.jelly is not provided.
-                -->
-                <input type="hidden" name="stapler-class" value="${curDescriptor.clazz.name}"/>
-                <st:include page="${descriptor.configPage}" class="${descriptor.clazz}" optional="${true}" />
-            </j:scope></f:radioBlock>
-            </j:scope>
-        </j:forEach>
-        </table>
+    <f:entry title="${%User Search Base}" field="userSearchBase">
+        <f:textbox />
     </f:entry>
-    <f:entry title="${%Resolve Group}" field="groupResolver">
-        <table width="100%">
-        <j:forEach
-                var="curDescriptor"
-                items="${descriptor.groupResolverList.iterator()}"
-                varStatus="loop">
-            <j:scope>
-            <j:set
-                var="groupResolver"
-                value="${curDescriptor==instance.groupResolver.descriptor?instance.groupResolver:null}"
-            />
-            <f:radioBlock
-                title="${curDescriptor.displayName}"
-                name="groupResolver"
-                value="${loop.index}"
-                checked="${groupResolver != null || (instance.groupResolver == null &amp;&amp; loop.index == 0)}"
-                help="${curDescriptor.helpFile}"
-            ><j:scope>
-                <!-- Shown only when corresponding GroupResolver is selected. -->
-                <j:set var="descriptor" value="${curDescriptor}" />
-                <j:set var="instance" value="${groupResolver}" />
-                <!--
-                    Call config.jelly of the GroupResolver subclass.
-                    Do nothing if config.jelly is not provided.
-                -->
-                <input type="hidden" name="stapler-class" value="${curDescriptor.clazz.name}"/>
-                <st:include page="${descriptor.configPage}" class="${descriptor.clazz}" optional="${true}" />
-            </j:scope></f:radioBlock>
-            </j:scope>
-        </j:forEach>
-        </table>
+    <f:entry title="${%User Search LDAP Query}" field="userQueryTemplate">
+        <f:textbox />
+    </f:entry>
+    <f:entry title="${%Group search base}" field="groupSearchBase">
+        <f:textbox />
+    </f:entry>
+    <f:entry title="${%Prefix of Group Name}" field="groupPrefix">
+        <f:textbox />
+    </f:entry>
+    <f:entry field="queryUser" title="${%Query User}">
+        <f:textbox />
+    </f:entry>
+    <f:entry field="queryPassword" title="${%Query Password}">
+        <f:password />
     </f:entry>
     <f:advanced>
         <f:entry title="${%Connection Timeout}" field="connectionTimeout">

@@ -42,26 +42,37 @@ public class LdapSaslSecurityRealmSimpleTest
         {
             List<String> ldapUriList = Arrays.asList("ldap:///", "ldaps:///");
             String mechanisms = "DIGEST-MD5 CRAM-MD5";
-            UserDnResolver userDnResolver = new NoUserDnResolver();
-            GroupResolver groupResolver = new NoGroupResolver();
             int connectionTimeout = 100;
             int readTimeout = 30;
+            String userSearchBase = "ou=People,dc=example,dc=jp";
+            String userQueryTemplate = "uid=${uid}";
+            String groupSearchBase = "ou=Groups,dc=example,dc=jp";
+            String groupPrefix = "ROLE_";
+            String queryUser = "querier";
+            String queryPassword = "secret";
             
             LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
                     ldapUriList,
                     mechanisms,
-                    userDnResolver,
-                    groupResolver,
                     connectionTimeout,
-                    readTimeout
+                    readTimeout,
+                    userSearchBase,
+                    userQueryTemplate,
+                    groupSearchBase,
+                    groupPrefix,
+                    queryUser,
+                    queryPassword
                     );
             assertEquals("Constructor parameters are preserved", ldapUriList, target.getLdapUriList());
             assertEquals("Constructor parameters are preserved", mechanisms, target.getMechanisms());
-            assertSame("Constructor parameters are preserved", userDnResolver, target.getUserDnResolver());
-            assertSame("Constructor parameters are preserved", groupResolver, target.getGroupResolver());
             assertEquals("Constructor parameters are preserved", connectionTimeout, target.getConnectionTimeout());
             assertEquals("Constructor parameters are preserved", readTimeout, target.getReadTimeout());
-            
+            assertEquals(userSearchBase, target.getUserSearchBase());
+            assertEquals(userQueryTemplate, target.getUserQueryTemplate());
+            assertEquals(groupSearchBase, target.getGroupSearchBase());
+            assertEquals(groupPrefix, target.getGroupPrefix());
+            assertEquals(queryUser, target.getQueryUser());
+            assertEquals(queryPassword, target.getQueryPassword());
         }
         
         // Trimmed
@@ -69,13 +80,23 @@ public class LdapSaslSecurityRealmSimpleTest
             LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
                     Arrays.asList("  ldap:///  ", "  ", "  ldaps:///  "),
                     "  ,  DIGEST-MD5   ,,,   CRAM-MD5  ,",
-                    null,
-                    null,
                     0,
-                    0
+                    0,
+                    "  ou=People,dc=example,dc=jp  ",
+                    "  uid=${uid}  ",
+                    "  ou=Groups,dc=example,dc=jp  ",
+                    "  ROLE_  ",
+                    "  querier  ",
+                    "  secret  "
                     );
             assertEquals("Trimmed", Arrays.asList("ldap:///", "ldaps:///"), target.getLdapUriList());
             assertEquals("Trimmed", "DIGEST-MD5 CRAM-MD5", target.getMechanisms());
+            assertEquals("ou=People,dc=example,dc=jp", target.getUserSearchBase());
+            assertEquals("uid=${uid}", target.getUserQueryTemplate());
+            assertEquals("ou=Groups,dc=example,dc=jp", target.getGroupSearchBase());
+            assertEquals("ROLE_", target.getGroupPrefix());
+            assertEquals("querier", target.getQueryUser());
+            assertEquals("  secret  ", target.getQueryPassword());
         }
         
         // null
@@ -83,13 +104,23 @@ public class LdapSaslSecurityRealmSimpleTest
             LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
                     null,
                     null,
-                    null,
-                    null,
                     0,
-                    0
+                    0,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
                     );
             assertEquals("null", 0, target.getLdapUriList().size());
             assertEquals("null", "", target.getMechanisms());
+            assertNull(target.getUserSearchBase());
+            assertNull(target.getUserQueryTemplate());
+            assertNull(target.getGroupSearchBase());
+            assertNull(target.getGroupPrefix());
+            assertNull(target.getQueryUser());
+            assertNull(target.getQueryPassword());
         }
     }
 }
