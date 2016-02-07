@@ -23,8 +23,8 @@
  */
 package jp.ikedam.jenkins.plugins.ldap_sasl;
 
-import hudson.DescriptorExtensionList;
 import hudson.Extension;
+import hudson.Util;
 import hudson.model.AutoCompletionCandidates;
 import hudson.model.Descriptor;
 import hudson.security.AbstractPasswordBasedSecurityRealm;
@@ -32,17 +32,24 @@ import hudson.security.GroupDetails;
 import hudson.security.SecurityRealm;
 import hudson.util.FormValidation;
 
-import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Map;
 
+import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
 import javax.naming.Context;
 import javax.naming.InvalidNameException;
+import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
+import javax.naming.directory.SearchControls;
+import javax.naming.directory.SearchResult;
 import javax.naming.ldap.InitialLdapContext;
 import javax.naming.ldap.LdapContext;
 import javax.naming.ldap.LdapName;
@@ -51,10 +58,12 @@ import org.acegisecurity.AuthenticationException;
 import org.acegisecurity.AuthenticationServiceException;
 import org.acegisecurity.BadCredentialsException;
 import org.acegisecurity.GrantedAuthority;
+import org.acegisecurity.GrantedAuthorityImpl;
 import org.acegisecurity.userdetails.UserDetails;
 import org.acegisecurity.userdetails.UsernameNotFoundException;
 import org.apache.commons.lang.StringUtils;
 
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -65,7 +74,6 @@ import org.springframework.dao.DataAccessException;
  * Security Realm that supports LDAP SASL authentication.
  */
 public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
-        implements Serializable
 {
     /**
      * Descriptor to map the object and the view.
@@ -129,26 +137,6 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
                 }
             }
             return candidate;
-        }
-        
-        /**
-         * Returns the list of available UserDnResolvers.
-         *  
-         * @return the list of UserDnResolvers.
-         */
-        public DescriptorExtensionList<UserDnResolver,Descriptor<UserDnResolver>> getUserDnResolverList()
-        {
-            return UserDnResolver.all();
-        }
-        
-        /**
-         * Returns the list of available GroupResolvers.
-         *  
-         * @return the list of GroupResolvers.
-         */
-        public DescriptorExtensionList<GroupResolver,Descriptor<GroupResolver>> getGroupResolverList()
-        {
-            return GroupResolver.all();
         }
         
         /**
@@ -271,10 +259,10 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
         }
     }
     
-    private static final long serialVersionUID = 4771805355880928786L;
+    private static final Logger LOGGER = Logger.getLogger(LdapSaslSecurityRealm.class.getName());
     protected static final String SEPERATOR_PATTERN = "[\\s,]+";
     
-    private List<String> ldapUriList;
+    private final List<String> ldapUriList;
     
     /**
      * Returns the list of LDAP URIs.
@@ -311,7 +299,7 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
         return !validLdapUriList.isEmpty()?StringUtils.join(validLdapUriList, " "):null;
     }
     
-    private List<String> mechanismList;
+    private final List<String> mechanismList;
     
     /**
      * Returns the mechanisms to be used in SASL negotiation.
@@ -334,57 +322,7 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
         return StringUtils.join(getMechanismList(), " ");
     }
     
-    private UserDnResolver userDnResolver = null;
-    
-    /**
-     * Returns the object to resolver the user DN.
-     * 
-     * @return the userDnResolver
-     */
-    public UserDnResolver getUserDnResolver()
-    {
-        return userDnResolver;
-    }
-    
-    private GroupResolver groupResolver = null;
-    
-    /**
-     * Returns resolveGroup, that encapsulates the group resolving.
-     * 
-     * @return the resolveGroup
-     */
-    public GroupResolver getGroupResolver()
-    {
-        return groupResolver;
-    }
-    
-    // for old version compatibility.
-    private String groupSearchBase = null;
-    private String groupPrefix = null;
-    /**
-     * fix up for the old version.
-     * 
-     * @return fixed instance.
-     */
-    public Object readResolve()
-    {
-        if(groupSearchBase != null && groupPrefix != null)
-        {
-            // configuration for 0.1.0
-            userDnResolver = new LdapWhoamiUserDnResolver();
-            groupResolver = !StringUtils.isBlank(groupSearchBase)?
-                    new SearchGroupResolver(
-                            groupSearchBase,
-                            groupPrefix
-                    ):
-                    new NoGroupResolver();
-            groupSearchBase = null;
-            groupPrefix = null;
-        }
-        return this;
-    }
-    
-    private int connectionTimeout;
+    private final int connectionTimeout;
     
     /**
      * Returns the timeout of the LDAP server connection.
@@ -396,7 +334,7 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
         return connectionTimeout;
     }
     
-    private int readTimeout;
+    private final int readTimeout;
     
     /**
      * Returns the timeout of the LDAP server reading.
@@ -408,6 +346,58 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
         return readTimeout;
     }
     
+    private final String userSearchBase;
+    private final String userQueryTemplate;
+    private final String groupSearchBase;
+    private final String groupPrefix;
+    private final String queryUser;
+    private final String queryPassword;
+    
+    /**
+     * @return LDAP base to search users.
+     */
+    public String getUserSearchBase() {
+        return userSearchBase;
+    }
+    
+    /**
+     * @return query to search users. ${uid} will be replaced.
+     */
+    public String getUserQueryTemplate() {
+        return userQueryTemplate;
+    }
+    
+    /**
+     * @return LDAP base to search groups.
+     */
+    public String getGroupSearchBase() {
+        return groupSearchBase;
+    }
+    
+    /**
+     * @return prefix added to group name.
+     */
+    public String getGroupPrefix() {
+        return groupPrefix;
+    }
+    
+    /**
+     * @return user to query database.
+     */
+    public String getQueryUser()
+    {
+        return queryUser;
+    }
+    
+    /**
+     * @return password used with {@link #getQueryUser()}
+     * @since 1.1.0
+     */
+    public String getQueryPassword()
+    {
+        return queryPassword;
+    }
+    
     /**
      * Constructor instantiating with parameters in the configuration page.
      * 
@@ -417,18 +407,24 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
      * 
      * @param ldapUriList the URIs of LDAP servers.
      * @param mechanisms the whitespace separated list of mechanisms.
-     * @param resolveGroup the configuration of group resolving
      * @param connectionTimeout the timeout of the LDAP server connection.
      * @param readTimeout the timeout of the LDAP server reading.
+     * @param queryUser a user to query database. can be {@code null}.
+     * @param queryPassword a password used with queryUser. can be {@code null}
+     * @since 1.1.0
      */
     @DataBoundConstructor
     public LdapSaslSecurityRealm(
             List<String> ldapUriList,
             String mechanisms,
-            UserDnResolver userDnResolver,
-            GroupResolver groupResolver,
             int connectionTimeout,
-            int readTimeout
+            int readTimeout,
+            String userSearchBase,
+            String userQueryTemplate,
+            String groupSearchBase,
+            String groupPrefix,
+            String queryUser,
+            String queryPassword
     )
     {
         this.ldapUriList = new ArrayList<String>();
@@ -452,37 +448,38 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
                 this.mechanismList.add(StringUtils.trim(mechanism));
             }
         }
-        this.userDnResolver = userDnResolver;
-        this.groupResolver = groupResolver;
         this.connectionTimeout = connectionTimeout;
         this.readTimeout = readTimeout;
+        this.userSearchBase = StringUtils.trim(userSearchBase);
+        this.userQueryTemplate = StringUtils.trim(userQueryTemplate);
+        this.groupSearchBase = StringUtils.trim(groupSearchBase);
+        this.groupPrefix = StringUtils.trim(groupPrefix);
+        this.queryUser = StringUtils.trim(queryUser);
+        this.queryPassword = queryPassword;
     }
     
     /**
-     * Authorize a user.
+     * Connects to the ldap with specified userinfo.
      * 
      * @param username
      * @param password
-     * @see hudson.security.AbstractPasswordBasedSecurityRealm#authenticate(java.lang.String, java.lang.String)
+     * @return
      */
-    @Override
-    protected UserDetails authenticate(String username, String password)
+    private LdapContext connectToLdap(String username, String password)
             throws AuthenticationException
     {
-        Logger logger = getLogger();
-        
         // check configuration.
         String ldapUris = getValidLdapUris();
         if(StringUtils.isBlank(ldapUris))
         {
-            logger.severe("No valid LDAP URI is specified.");
+            LOGGER.severe("No valid LDAP URI is specified.");
             throw new AuthenticationServiceException("No valid LDAP URI is specified.");
         }
         
         String mechanisms = getMechanisms();
         if(StringUtils.isBlank(mechanisms))
         {
-            logger.severe("No valid mechanism is specified.");
+            LOGGER.severe("No valid mechanism is specified.");
             throw new AuthenticationServiceException("No valid mechanism is specified.");
         }
         
@@ -498,10 +495,10 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
         env.put("com.sun.jndi.ldap.connect.timeout", Integer.toString(getConnectionTimeout()));
         env.put("com.sun.jndi.ldap.read.timeout", Integer.toString(getReadTimeout()));
         
-        logger.fine("Authenticating with LDAP-SASL:");
-        logger.fine(String.format("username=%s", username));
-        logger.fine(String.format("servers=%s", ldapUris));
-        logger.fine(String.format("mech=%s", mechanisms));
+        LOGGER.fine("Authenticating with LDAP-SASL:");
+        LOGGER.fine(String.format("username=%s", username));
+        LOGGER.fine(String.format("servers=%s", ldapUris));
+        LOGGER.fine(String.format("mech=%s", mechanisms));
         
         LdapContext ctx = null;
         try
@@ -519,14 +516,147 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
             throw new AuthenticationServiceException(String.format("Authentication failed: %s", username), e);
         }
         
-        String userDn = (getUserDnResolver() != null)?getUserDnResolver().getUserDn(ctx, username):null;
-        logger.fine(String.format("User DN is %s", userDn));
+        return ctx;
+    }
+    
+    @CheckForNull
+    protected String resolveUserDn(LdapContext ctx, String username)
+    {
+        if(StringUtils.isBlank(getUserQueryTemplate()))
+        {
+            // not configured.
+            LOGGER.fine("Disabled resolving user DN as not configured.");
+            
+            return null;
+        }
         
-        List<GrantedAuthority> authorities = (getGroupResolver() != null)?
-                getGroupResolver().resolveGroup(ctx, userDn, username):
-                new ArrayList<GrantedAuthority>();
+        try
+        {
+            SearchControls searchControls = new SearchControls();
+            searchControls.setSearchScope(SearchControls.SUBTREE_SCOPE);
+            String query = expandUsername(getUserQueryTemplate(), username);
+            LOGGER.fine(String.format("Searching users base=%s, query=%s", getUserSearchBase(), query));
+            NamingEnumeration<SearchResult> entries = ctx.search(
+                    Util.fixNull(getUserSearchBase()),
+                    query,
+                    searchControls
+            );
+            if(!entries.hasMore())
+            {
+                // no entry.
+                LOGGER.warning(String.format("User not found: %s", username));
+                return null;
+            }
+            
+            String userDn = entries.next().getNameInNamespace();
+            
+            if(entries.hasMore())
+            {
+                // more than one entry.
+                LOGGER.warning(String.format("User found more than one: %s", username));
+                return null;
+            }
+            entries.close();
+            
+            return userDn;
+        }
+        catch(NamingException e)
+        {
+            LOGGER.log(Level.SEVERE, String.format("Failed to search user %s", username), e);
+        }
+        return null;
+    }
+    
+    
+    /**
+     * Expand ${uid} in template
+     * 
+     * @param username uid value
+     * @return ${uid} expanded string
+     */
+    private String expandUsername(String template, String username)
+    {
+        Map<String,String> variables = new HashMap<String,String>();
+        variables.put("uid", username);
+        return Util.replaceMacro(template, variables);
+    }
+    
+    /**
+     * Resolves groups by querying the LDAP directory. 
+     * 
+     * Never return null in any case. Returns empty list instead.
+     * 
+     * @param ctx
+     * @param dn
+     * @return List of authorities (not null)
+     */
+    @Nonnull
+    protected List<GrantedAuthority> resolveGroup(LdapContext ctx, String dn)
+    {
+        List<GrantedAuthority> authorities = new ArrayList<GrantedAuthority>();
         
-        logger.fine("Authenticating succeeded.");
+        if(dn == null)
+        {
+            LOGGER.fine("Group cannot be resolved: DN of the user is not resolved!");
+            return authorities;
+        }
+        
+        try
+        {
+            SearchControls searchControls = new SearchControls();
+            searchControls.setSearchScope(SearchControls.SUBTREE_SCOPE);
+            LOGGER.fine(String.format("Searching groups base=%s, dn=%s", getGroupSearchBase(), dn));
+            NamingEnumeration<SearchResult> entries = ctx.search(
+                    Util.fixNull(getGroupSearchBase()),
+                    getGroupSearchQuery(dn),
+                    searchControls
+            );
+            while(entries.hasMore()){
+                SearchResult entry = entries.next();
+                String groupName = entry.getAttributes().get("cn").get().toString();
+                if(getGroupPrefix() != null){
+                    groupName = getGroupPrefix() + groupName;
+                }
+                authorities.add(new GrantedAuthorityImpl(groupName));
+                LOGGER.fine(String.format("group: %s", groupName));
+            }
+            entries.close();
+        }
+        catch(NamingException e)
+        {
+            LOGGER.log(Level.WARNING, String.format("Failed to search groups for %s", dn), e);
+        }
+        
+        return authorities;
+    }
+    
+    /**
+     * Returns query string to search groups
+     * 
+     * @param dn
+     * @return query
+     */
+    protected String getGroupSearchQuery(String dn)
+    {
+        return MessageFormat.format("(| "
+                + "(& (objectClass=groupOfUniqueNames) (uniqueMember={0}))"
+                + "(& (objectClass=groupOfNames) (member={0}))"
+                + ")", dn);
+    }
+    
+    /**
+     * @param ctx
+     * @param unsername
+     * @return
+     */
+    protected UserDetails createUserDetails(LdapContext ctx, String username)
+    {
+        String userDn = resolveUserDn(ctx, username);
+        LOGGER.fine(String.format("User DN is %s", userDn));
+        
+        List<GrantedAuthority> authorities = resolveGroup(ctx, userDn);
+        
+        LOGGER.fine("Authenticating succeeded.");
         return new LdapUser(
                 username,
                 "",         // password(not used)
@@ -539,17 +669,27 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
         );
     }
     
-    private Logger getLogger()
+    /**
+     * Authorize a user.
+     * 
+     * @param username
+     * @param password
+     * @see hudson.security.AbstractPasswordBasedSecurityRealm#authenticate(java.lang.String, java.lang.String)
+     */
+    @Override
+    protected UserDetails authenticate(String username, String password)
+            throws AuthenticationException
     {
-        return Logger.getLogger(getClass().getName());
+        LdapContext ctx = connectToLdap(username, password);
+        
+        return createUserDetails(ctx, username);
     }
     
     /**
-     * Used for support user input.
-     * Not supported, return null.
+     * Queries the user to the user database of LDAP.
      * 
      * @param username
-     * @return null
+     * @return the user queried.
      * @throws UsernameNotFoundException
      * @throws DataAccessException
      * @see hudson.security.AbstractPasswordBasedSecurityRealm#loadUserByUsername(java.lang.String)
@@ -558,7 +698,14 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
     public UserDetails loadUserByUsername(String username)
             throws UsernameNotFoundException, DataAccessException
     {
-        return null;
+        if (StringUtils.isBlank(getQueryUser()) || getQueryPassword() == null)
+        {
+            return null;
+        }
+        
+        LdapContext ctx = connectToLdap(getQueryUser(), getQueryPassword());
+        
+        return createUserDetails(ctx, username);
     }
     
     /**

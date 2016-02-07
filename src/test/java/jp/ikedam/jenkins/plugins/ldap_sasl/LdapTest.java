@@ -26,8 +26,6 @@ package jp.ikedam.jenkins.plugins.ldap_sasl;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.acegisecurity.AuthenticationServiceException;
 import org.acegisecurity.BadCredentialsException;
@@ -123,10 +121,14 @@ public class LdapTest
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
                     "DIGEST-MD5",
-                    new NoUserDnResolver(),
-                    new NoGroupResolver(),
                     0,
-                    3000
+                    3000,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test1", "password1");
@@ -148,10 +150,14 @@ public class LdapTest
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
                     "CRAM-MD5",
-                    new NoUserDnResolver(),
-                    new NoGroupResolver(),
                     0,
-                    3000
+                    3000,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
                     );
             
             UserDetails user = target.authenticate("test2", "password2");
@@ -165,10 +171,14 @@ public class LdapTest
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
                     "NOSUCHMETHOD DIGEST-MD5",
-                    new NoUserDnResolver(),
-                    new NoGroupResolver(),
                     0,
-                    3000
+                    3000,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
                     );
             
             UserDetails user = target.authenticate("test1", "password1");
@@ -182,10 +192,14 @@ public class LdapTest
                             String.format("ldap://127.0.0.1:%d/dc=nosuchdc,dc=com", ldapPort)
                             ),
                     "DIGEST-MD5",
-                    new NoUserDnResolver(),
-                    new NoGroupResolver(),
                     0,
-                    3000
+                    3000,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
                     );
             
             UserDetails user = target.authenticate("test1", "password1");
@@ -199,10 +213,14 @@ public class LdapTest
                             String.format("ldap://127.0.0.1:%d/dc=nosuchdc,dc=com", ldapPort)
                             ),
                     "DIGEST-MD5",
-                    null,
-                    null,
                     0,
-                    3000
+                    3000,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
                     );
             
             UserDetails user = target.authenticate("test1", "password1");
@@ -221,10 +239,14 @@ public class LdapTest
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
                     "DIGEST-MD5",
-                    new NoUserDnResolver(),
-                    new NoGroupResolver(),
                     0,
-                    3000
+                    3000,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
                     );
             
             try
@@ -243,10 +265,14 @@ public class LdapTest
             LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
                     new ArrayList<String>(),
                     "DIGEST-MD5",
-                    new NoUserDnResolver(),
-                    new NoGroupResolver(),
                     0,
-                    3000
+                    3000,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
                     );
             
             try
@@ -267,10 +293,14 @@ public class LdapTest
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
                     "",
-                    new NoUserDnResolver(),
-                    new NoGroupResolver(),
                     0,
-                    3000
+                    3000,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
                     );
             
             try
@@ -291,10 +321,14 @@ public class LdapTest
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
                     "NOSUCHMETHOD",
-                    new NoUserDnResolver(),
-                    new NoGroupResolver(),
                     0,
-                    3000
+                    3000,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
                     );
             
             try
@@ -311,19 +345,46 @@ public class LdapTest
     
     @Test
     @For(LdapSaslSecurityRealm.class)
-    public void testLdapSaslSecurityRealm_loadUserByUsername()
+    public void testLdapSaslSecurityRealm_loadUserByUsernameSuccess()
     {
         LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
                 Arrays.asList(
                         String.format("ldap://127.0.0.1:%d/", ldapPort)
                         ),
                 "DIGEST-MD5",
-                new NoUserDnResolver(),
-                new NoGroupResolver(),
                 0,
-                3000
+                3000,
+                "dc=example,dc=com",
+                "uid=${uid}",
+                "dc=example,dc=com",
+                null,
+                "test3",
+                "password3"
                 );
-        assertNull(target.loadUserByUsername("test1"));
+        LdapUser user = (LdapUser)target.loadUserByUsername("test1");
+        assertEquals("cn=User1,ou=People,dc=example,dc=com", user.getDn());
+    }
+    
+    @Test
+    @For(LdapSaslSecurityRealm.class)
+    public void testLdapSaslSecurityRealm_loadUserByUsernameFailure()
+    {
+        LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
+                Arrays.asList(
+                        String.format("ldap://127.0.0.1:%d/", ldapPort)
+                        ),
+                "DIGEST-MD5",
+                0,
+                3000,
+                "dc=example,dc=com",
+                "uid=${uid}",
+                "dc=example,dc=com",
+                null,
+                null,
+                null
+                );
+        LdapUser user = (LdapUser)target.loadUserByUsername("test1");
+        assertNull(user);
     }
     
     @Test
@@ -335,99 +396,20 @@ public class LdapTest
                         String.format("ldap://127.0.0.1:%d/", ldapPort)
                         ),
                 "DIGEST-MD5",
-                new NoUserDnResolver(),
-                new NoGroupResolver(),
                 0,
-                3000
+                3000,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
                 );
         assertNull(target.loadGroupByGroupname("Group1"));
     }
     
     @Test
-    @For(LdapWhoamiUserDnResolver.class)
-    public void testLdapWhoamiUserDnResolver_Success()
-    {
-        // Succeed
-        {
-            LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
-                    Arrays.asList(
-                            String.format("ldap://127.0.0.1:%d/", ldapPort)
-                            ),
-                    "DIGEST-MD5",
-                    new LdapWhoamiUserDnResolver(),
-                    new NoGroupResolver(),
-                    0,
-                    3000
-                    );
-            
-            LdapUser user = (LdapUser)target.authenticate("test1", "password1");
-            assertEquals("Use LDAP Who am I", "cn=User1,ou=People,dc=example,dc=com", user.getDn());
-        }
-    }
-    
-    @Test
-    @For(LdapWhoamiUserDnResolver.class)
-    public void testLdapWhoamiUserDnResolver_Failure() throws Exception
-    {
-        // LDAP who am i is not allowed.
-        {
-            Level level = Logger.getLogger(LdapWhoamiUserDnResolver.class.getName()).getLevel();
-            try{
-                // Suppress warning log
-                Logger.getLogger(LdapWhoamiUserDnResolver.class.getName()).setLevel(Level.SEVERE);
-                LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
-                        Arrays.asList(
-                                String.format("ldap://127.0.0.1:%d/", ldapPort)
-                                ),
-                        "DIGEST-MD5",
-                        new LdapWhoamiUserDnResolver(),
-                        new NoGroupResolver(),
-                        0,
-                        3000
-                        );
-                
-                LdapUser user = (LdapUser)target.authenticate("test3", "password3");
-                assertNull("LDAP who am i is not allowed", user.getDn());
-            }
-            finally
-            {
-                Logger.getLogger(LdapWhoamiUserDnResolver.class.getName()).setLevel(level);
-            }
-        }
-        
-        // LDAP who am i is not supported.
-        {
-            Level level = Logger.getLogger(LdapWhoamiUserDnResolver.class.getName()).getLevel();
-            try{
-                // Restart the server not to support LDAP who am i.
-                startLdapServer("config_nowhoami.ldif");
-                // Suppress warnings log
-                Logger.getLogger(LdapWhoamiUserDnResolver.class.getName()).setLevel(Level.SEVERE);
-                
-                LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
-                        Arrays.asList(
-                                String.format("ldap://127.0.0.1:%d/", ldapPort)
-                                ),
-                        "DIGEST-MD5",
-                        new LdapWhoamiUserDnResolver(),
-                        new NoGroupResolver(),
-                        0,
-                        3000
-                        );
-                
-                LdapUser user = (LdapUser)target.authenticate("test1", "password1");
-                assertNull("LDAP who am i is not supported", user.getDn());
-            }
-            finally
-            {
-                Logger.getLogger(LdapWhoamiUserDnResolver.class.getName()).setLevel(level);
-                startLdapServer("config.ldif");
-            }
-        }
-    }
-    
-    @Test
-    @For(SearchUserDnResolver.class)
+    @For(LdapSaslSecurityRealm.class)
     public void testSearchUserDnResolver_Success()
     {
         // Success
@@ -437,10 +419,14 @@ public class LdapTest
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
                     "DIGEST-MD5",
-                    new SearchUserDnResolver("dc=example,dc=com", "uid=${uid}"),
-                    new NoGroupResolver(),
                     0,
-                    3000
+                    3000,
+                    "dc=example,dc=com",
+                    "uid=${uid}",
+                    null,
+                    null,
+                    null,
+                    null
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test1", "password1");
@@ -454,10 +440,14 @@ public class LdapTest
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
                     "DIGEST-MD5",
-                    new SearchUserDnResolver("dc=example,dc=com", "sn=${uid}"),
-                    new NoGroupResolver(),
                     0,
-                    3000
+                    3000,
+                    "dc=example,dc=com",
+                    "sn=${uid}",
+                    null,
+                    null,
+                    null,
+                    null
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test2", "password2");
@@ -471,10 +461,14 @@ public class LdapTest
                             String.format("ldap://127.0.0.1:%d/dc=example,dc=com", ldapPort)
                             ),
                     "DIGEST-MD5",
-                    new SearchUserDnResolver("", "uid=${uid}"),
-                    new NoGroupResolver(),
                     0,
-                    3000
+                    3000,
+                    "",
+                    "uid=${uid}",
+                    null,
+                    null,
+                    null,
+                    null
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test1", "password1");
@@ -488,10 +482,14 @@ public class LdapTest
                             String.format("ldap://127.0.0.1:%d/dc=com", ldapPort)
                             ),
                     "DIGEST-MD5",
-                    new SearchUserDnResolver("dc=example", "uid=${uid}"),
-                    new NoGroupResolver(),
                     0,
-                    3000
+                    3000,
+                    "dc=example",
+                    "uid=${uid}",
+                    null,
+                    null,
+                    null,
+                    null
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test1", "password1");
@@ -505,10 +503,14 @@ public class LdapTest
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
                     "DIGEST-MD5",
-                    new SearchUserDnResolver(null, "uid=${uid}"),
-                    new NoGroupResolver(),
                     0,
-                    3000
+                    3000,
+                    null,
+                    "uid=${uid}",
+                    null,
+                    null,
+                    null,
+                    null
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test1", "password1");
@@ -522,10 +524,14 @@ public class LdapTest
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
                     "DIGEST-MD5",
-                    new SearchUserDnResolver(null, "uid=test2"),
-                    new NoGroupResolver(),
                     0,
-                    3000
+                    3000,
+                    null,
+                    "uid=test2",
+                    null,
+                    null,
+                    null,
+                    null
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test1", "password1");
@@ -539,10 +545,14 @@ public class LdapTest
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
                     "DIGEST-MD5",
-                    new SearchUserDnResolver("dc=example,dc=com", "(| (& (objectClass=inetOrgPerson) (uid=${uid})) (& (objectClass=person) (uid=${uid})))"),
-                    new NoGroupResolver(),
                     0,
-                    3000
+                    3000,
+                    "dc=example,dc=com",
+                    "(| (& (objectClass=inetOrgPerson) (uid=${uid})) (& (objectClass=person) (uid=${uid})))",
+                    null,
+                    null,
+                    null,
+                    null
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test1", "password1");
@@ -551,7 +561,7 @@ public class LdapTest
     }
     
     @Test
-    @For(SearchUserDnResolver.class)
+    @For(LdapSaslSecurityRealm.class)
     public void testSearchUserDnResolver_Failure()
     {
         // No match
@@ -561,10 +571,14 @@ public class LdapTest
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
                     "DIGEST-MD5",
-                    new SearchUserDnResolver("dc=example,dc=com", "cn=${uid}"),
-                    new NoGroupResolver(),
                     0,
-                    3000
+                    3000,
+                    "dc=example,dc=com",
+                    "cn=${uid}",
+                    null,
+                    null,
+                    null,
+                    null
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test1", "password1");
@@ -578,10 +592,14 @@ public class LdapTest
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
                     "DIGEST-MD5",
-                    new SearchUserDnResolver("dc=example,dc=com", "objectClass=inetOrgPerson"),
-                    new NoGroupResolver(),
                     0,
-                    3000
+                    3000,
+                    "dc=example,dc=com",
+                    "objectClass=inetOrgPerson",
+                    null,
+                    null,
+                    null,
+                    null
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test1", "password1");
@@ -590,83 +608,66 @@ public class LdapTest
         
         // Non exist DN(specified as a parameter)
         {
-            Level level = Logger.getLogger(SearchUserDnResolver.class.getName()).getLevel();
-            try
-            {
-                // Suppress severe log
-                Logger.getLogger(SearchUserDnResolver.class.getName()).setLevel(Level.OFF);
-                LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
-                        Arrays.asList(
-                                String.format("ldap://127.0.0.1:%d/", ldapPort)
-                                ),
-                        "DIGEST-MD5",
-                        new SearchUserDnResolver("dc=example,dc=jp", "uid=${uid}"),
-                        new NoGroupResolver(),
-                        0,
-                        3000
-                        );
-                
-                LdapUser user = (LdapUser)target.authenticate("test1", "password1");
-                assertNull("Non exist DN(specified as a parameter)", user.getDn());
-            }
-            finally
-            {
-                Logger.getLogger(SearchUserDnResolver.class.getName()).setLevel(level);
-            }
+            LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
+                    Arrays.asList(
+                            String.format("ldap://127.0.0.1:%d/", ldapPort)
+                            ),
+                    "DIGEST-MD5",
+                    0,
+                    3000,
+                    "dc=example,dc=jp",
+                    "uid=${uid}",
+                    null,
+                    null,
+                    null,
+                    null
+                    );
+            
+            LdapUser user = (LdapUser)target.authenticate("test1", "password1");
+            assertNull("Non exist DN(specified as a parameter)", user.getDn());
         }
         
         // Non exist DN(specified in URI)
         {
-            Level level = Logger.getLogger(SearchUserDnResolver.class.getName()).getLevel();
-            try
-            {
-                // Suppress severe log
-                Logger.getLogger(SearchUserDnResolver.class.getName()).setLevel(Level.OFF);
-                LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
-                        Arrays.asList(
-                                String.format("ldap://127.0.0.1:%d/dc=example,dc=jp", ldapPort)
-                                ),
-                        "DIGEST-MD5",
-                        new SearchUserDnResolver(null, "uid=${uid}"),
-                        new NoGroupResolver(),
-                        0,
-                        3000
-                        );
-                
-                LdapUser user = (LdapUser)target.authenticate("test1", "password1");
-                assertNull("Non exist DN(specified in URI)", user.getDn());
-            }
-            finally
-            {
-                Logger.getLogger(SearchUserDnResolver.class.getName()).setLevel(level);
-            }
+            // Suppress severe log
+            LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
+                    Arrays.asList(
+                            String.format("ldap://127.0.0.1:%d/dc=example,dc=jp", ldapPort)
+                            ),
+                    "DIGEST-MD5",
+                    0,
+                    3000,
+                    null,
+                    "uid=${uid}",
+                    null,
+                    null,
+                    null,
+                    null
+                    );
+            
+            LdapUser user = (LdapUser)target.authenticate("test1", "password1");
+            assertNull("Non exist DN(specified in URI)", user.getDn());
         }
         
         // Invalid DN
         {
-            Level level = Logger.getLogger(SearchUserDnResolver.class.getName()).getLevel();
-            try
-            {
-                // Suppress severe log
-                Logger.getLogger(SearchUserDnResolver.class.getName()).setLevel(Level.OFF);
-                LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
-                        Arrays.asList(
-                                String.format("ldap://127.0.0.1:%d/dc=example,dc=jp", ldapPort)
-                                ),
-                        "DIGEST-MD5",
-                        new SearchUserDnResolver("hogehoge", "uid=${uid}"),
-                        new NoGroupResolver(),
-                        0,
-                        3000
-                        );
-                
-                LdapUser user = (LdapUser)target.authenticate("test1", "password1");
-                assertNull("Invalid DN", user.getDn());
-            }
-            finally
-            {
-                Logger.getLogger(SearchUserDnResolver.class.getName()).setLevel(level);
-            }
+            LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
+                    Arrays.asList(
+                            String.format("ldap://127.0.0.1:%d/dc=example,dc=jp", ldapPort)
+                            ),
+                    "DIGEST-MD5",
+                    0,
+                    3000,
+                    "hogehoge",
+                    "uid=${uid}",
+                    null,
+                    null,
+                    null,
+                    null
+                    );
+            
+            LdapUser user = (LdapUser)target.authenticate("test1", "password1");
+            assertNull("Invalid DN", user.getDn());
         }
         
         // No query(null)
@@ -676,10 +677,14 @@ public class LdapTest
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
                     "DIGEST-MD5",
-                    new SearchUserDnResolver("dc=example,dc=com", null),
-                    new NoGroupResolver(),
                     0,
-                    3000
+                    3000,
+                    "dc=example,dc=com",
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test1", "password1");
@@ -693,10 +698,14 @@ public class LdapTest
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
                     "DIGEST-MD5",
-                    new SearchUserDnResolver("dc=example,dc=com", "  "),
-                    new NoGroupResolver(),
                     0,
-                    3000
+                    3000,
+                    "dc=example,dc=com",
+                    "  ",
+                    null,
+                    null,
+                    null,
+                    null
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test1", "password1");
@@ -705,34 +714,28 @@ public class LdapTest
         
         // Bad query
         {
-            Level level = Logger.getLogger(SearchUserDnResolver.class.getName()).getLevel();
-            try
-            {
-                // Suppress severe log
-                Logger.getLogger(SearchUserDnResolver.class.getName()).setLevel(Level.OFF);
-                LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
-                        Arrays.asList(
-                                String.format("ldap://127.0.0.1:%d/", ldapPort)
-                                ),
-                        "DIGEST-MD5",
-                        new SearchUserDnResolver("dc=example,dc=com", "hogehoge"),
-                        new NoGroupResolver(),
-                        0,
-                        3000
-                        );
-                
-                LdapUser user = (LdapUser)target.authenticate("test1", "password1");
-                assertNull("Bad query", user.getDn());
-            }
-            finally
-            {
-                Logger.getLogger(SearchUserDnResolver.class.getName()).setLevel(level);
-            }
+            LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
+                    Arrays.asList(
+                            String.format("ldap://127.0.0.1:%d/", ldapPort)
+                            ),
+                    "DIGEST-MD5",
+                    0,
+                    3000,
+                    "dc=example,dc=com",
+                    "hogehoge",
+                    null,
+                    null,
+                    null,
+                    null
+                    );
+            
+            LdapUser user = (LdapUser)target.authenticate("test1", "password1");
+            assertNull("Bad query", user.getDn());
         }
     }
     
     @Test
-    @For(SearchGroupResolver.class)
+    @For(LdapSaslSecurityRealm.class)
     public void testSearchGroupResolver_Success()
     {
         // Success
@@ -742,10 +745,14 @@ public class LdapTest
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
                     "DIGEST-MD5",
-                    new LdapWhoamiUserDnResolver(),
-                    new SearchGroupResolver("dc=example,dc=com", null),
                     0,
-                    3000
+                    3000,
+                    "dc=example,dc=com",
+                    "uid=${uid}",
+                    "dc=example,dc=com",
+                    null,
+                    null,
+                    null
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test1", "password1");
@@ -765,10 +772,14 @@ public class LdapTest
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
                     "DIGEST-MD5",
-                    new LdapWhoamiUserDnResolver(),
-                    new SearchGroupResolver("dc=example,dc=com", "ROLE_"),
                     0,
-                    3000
+                    3000,
+                    "dc=example,dc=com",
+                    "uid=${uid}",
+                    "dc=example,dc=com",
+                    "ROLE_",
+                    null,
+                    null
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test2", "password2");
@@ -786,10 +797,14 @@ public class LdapTest
                             String.format("ldap://127.0.0.1:%d/dc=example,dc=com", ldapPort)
                             ),
                     "DIGEST-MD5",
-                    new LdapWhoamiUserDnResolver(),
-                    new SearchGroupResolver("", null),
                     0,
-                    3000
+                    3000,
+                    null,
+                    "uid=${uid}",
+                    "",
+                    null,
+                    null,
+                    null
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test1", "password1");
@@ -807,10 +822,14 @@ public class LdapTest
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
                     "DIGEST-MD5",
-                    new LdapWhoamiUserDnResolver(),
-                    new SearchGroupResolver(null, null),
                     0,
-                    3000
+                    3000,
+                    "dc=example,dc=com",
+                    "uid=${uid}",
+                    null,
+                    null,
+                    null,
+                    null
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test1", "password1");
@@ -828,10 +847,14 @@ public class LdapTest
                             String.format("ldap://127.0.0.1:%d/dc=com", ldapPort)
                             ),
                     "DIGEST-MD5",
-                    new LdapWhoamiUserDnResolver(),
-                    new SearchGroupResolver("dc=example", null),
                     0,
-                    3000
+                    3000,
+                    "dc=example",
+                    "uid=${uid}",
+                    "dc=example",
+                    null,
+                    null,
+                    null
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test1", "password1");
@@ -849,11 +872,14 @@ public class LdapTest
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
                     "DIGEST-MD5",
-                    // Ldap who am i is not allowed for test3.
-                    new SearchUserDnResolver("dc=example,dc=com", "uid=${uid}"),
-                    new SearchGroupResolver("dc=example,dc=com", null),
                     0,
-                    3000
+                    3000,
+                    "dc=example,dc=com",
+                    "uid=${uid}",
+                    "dc=example,dc=com",
+                    null,
+                    null,
+                    null
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test3", "password3");
@@ -862,7 +888,7 @@ public class LdapTest
     }
     
     @Test
-    @For(SearchGroupResolver.class)
+    @For(LdapSaslSecurityRealm.class)
     public void testSearchGroupResolver_Failure()
     {
         // User is not resolved
@@ -872,10 +898,14 @@ public class LdapTest
                             String.format("ldap://127.0.0.1:%d/", ldapPort)
                             ),
                     "DIGEST-MD5",
-                    new NoUserDnResolver(),
-                    new SearchGroupResolver("dc=example,dc=jp", null),
                     0,
-                    3000
+                    3000,
+                    null,
+                    null,
+                    "dc=example,dc=com",
+                    null,
+                    null,
+                    null
                     );
             
             LdapUser user = (LdapUser)target.authenticate("test1", "password1");
@@ -884,83 +914,66 @@ public class LdapTest
         
         // Non-exist DN specified in parameter
         {
-            Level level = Logger.getLogger(SearchGroupResolver.class.getName()).getLevel();
-            try
-            {
-                // Suppress warning log
-                Logger.getLogger(SearchGroupResolver.class.getName()).setLevel(Level.SEVERE);
-                LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
-                        Arrays.asList(
-                                String.format("ldap://127.0.0.1:%d/", ldapPort)
-                                ),
-                        "DIGEST-MD5",
-                        new LdapWhoamiUserDnResolver(),
-                        new SearchGroupResolver("dc=example,dc=jp", null),
-                        0,
-                        3000
-                        );
-                
-                LdapUser user = (LdapUser)target.authenticate("test1", "password1");
-                assertEquals("Non-exist DN specified in parameter", 0, user.getAuthorities().length);
-            }
-            finally
-            {
-                Logger.getLogger(SearchGroupResolver.class.getName()).setLevel(level);
-            }
+            LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
+                    Arrays.asList(
+                            String.format("ldap://127.0.0.1:%d/", ldapPort)
+                            ),
+                    "DIGEST-MD5",
+                    0,
+                    3000,
+                    "dc=example,dc=com",
+                    "uid=${uid}",
+                    "dc=example,dc=jp",
+                    null,
+                    null,
+                    null
+                    );
+            
+            LdapUser user = (LdapUser)target.authenticate("test1", "password1");
+            assertEquals("Non-exist DN specified in parameter", 0, user.getAuthorities().length);
         }
         
         // Non-exist DN specified in URI
         {
-            Level level = Logger.getLogger(SearchGroupResolver.class.getName()).getLevel();
-            try
-            {
-                // Suppress warning log
-                Logger.getLogger(SearchGroupResolver.class.getName()).setLevel(Level.SEVERE);
-                LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
-                        Arrays.asList(
-                                String.format("ldap://127.0.0.1:%d/dc=example,dc=jp", ldapPort)
-                                ),
-                        "DIGEST-MD5",
-                        new LdapWhoamiUserDnResolver(),
-                        new SearchGroupResolver(null, null),
-                        0,
-                        3000
-                        );
-                
-                LdapUser user = (LdapUser)target.authenticate("test1", "password1");
-                assertEquals("Non-exist DN specified in URI", 0, user.getAuthorities().length);
-            }
-            finally
-            {
-                Logger.getLogger(SearchGroupResolver.class.getName()).setLevel(level);
-            }
+            // Suppress warning log
+            LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
+                    Arrays.asList(
+                            String.format("ldap://127.0.0.1:%d/dc=example,dc=jp", ldapPort)
+                            ),
+                    "DIGEST-MD5",
+                    0,
+                    3000,
+                    "dc=example,dc=com",
+                    "uid=${uid}",
+                    null,
+                    null,
+                    null,
+                    null
+                    );
+            
+            LdapUser user = (LdapUser)target.authenticate("test1", "password1");
+            assertEquals("Non-exist DN specified in URI", 0, user.getAuthorities().length);
         }
         
         // Invalid DN
         {
-            Level level = Logger.getLogger(SearchGroupResolver.class.getName()).getLevel();
-            try
-            {
-                // Suppress warning log
-                Logger.getLogger(SearchGroupResolver.class.getName()).setLevel(Level.SEVERE);
-                LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
-                        Arrays.asList(
-                                String.format("ldap://127.0.0.1:%d/", ldapPort)
-                                ),
-                        "DIGEST-MD5",
-                        new LdapWhoamiUserDnResolver(),
-                        new SearchGroupResolver("hogehoge", null),
-                        0,
-                        3000
-                        );
-                
-                LdapUser user = (LdapUser)target.authenticate("test1", "password1");
-                assertEquals("Invalid DN", 0, user.getAuthorities().length);
-            }
-            finally
-            {
-                Logger.getLogger(SearchGroupResolver.class.getName()).setLevel(level);
-            }
+            LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
+                    Arrays.asList(
+                            String.format("ldap://127.0.0.1:%d/", ldapPort)
+                            ),
+                    "DIGEST-MD5",
+                    0,
+                    3000,
+                    "dc=example,dc=com",
+                    "uid=${uid}",
+                    "hogehoge",
+                    null,
+                    null,
+                    null
+                    );
+            
+            LdapUser user = (LdapUser)target.authenticate("test1", "password1");
+            assertEquals("Invalid DN", 0, user.getAuthorities().length);
         }
     }
 }
