@@ -492,6 +492,7 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
         env.put(Context.SECURITY_PRINCIPAL, username);
         env.put(Context.SECURITY_CREDENTIALS, password);
         env.put(Context.SECURITY_AUTHENTICATION, mechanisms);
+        env.put(Context.REFERRAL, "ignore");
         env.put("com.sun.jndi.ldap.connect.timeout", Integer.toString(getConnectionTimeout()));
         env.put("com.sun.jndi.ldap.read.timeout", Integer.toString(getReadTimeout()));
         
@@ -647,11 +648,16 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
     /**
      * @param ctx
      * @param unsername
+     * @param allowNoDn
      * @return
      */
-    protected UserDetails createUserDetails(LdapContext ctx, String username)
+    protected UserDetails createUserDetails(LdapContext ctx, String username, boolean allowNoDn)
     {
         String userDn = resolveUserDn(ctx, username);
+        if (userDn == null && !allowNoDn) {
+            return null;
+        }
+        
         LOGGER.fine(String.format("User DN is %s", userDn));
         
         List<GrantedAuthority> authorities = resolveGroup(ctx, userDn);
@@ -682,7 +688,7 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
     {
         LdapContext ctx = connectToLdap(username, password);
         
-        return createUserDetails(ctx, username);
+        return createUserDetails(ctx, username, true);
     }
     
     /**
@@ -705,7 +711,7 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
         
         LdapContext ctx = connectToLdap(getQueryUser(), getQueryPassword());
         
-        return createUserDetails(ctx, username);
+        return createUserDetails(ctx, username, false);
     }
     
     /**

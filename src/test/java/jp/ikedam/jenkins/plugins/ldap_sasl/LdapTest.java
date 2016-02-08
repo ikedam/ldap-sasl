@@ -367,6 +367,28 @@ public class LdapTest
     
     @Test
     @For(LdapSaslSecurityRealm.class)
+    public void testLdapSaslSecurityRealm_loadUserByUsernameNotFound()
+    {
+        LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
+                Arrays.asList(
+                        String.format("ldap://127.0.0.1:%d/", ldapPort)
+                        ),
+                "DIGEST-MD5",
+                0,
+                3000,
+                "dc=example,dc=com",
+                "uid=${uid}",
+                "dc=example,dc=com",
+                null,
+                "test3",
+                "password3"
+                );
+        LdapUser user = (LdapUser)target.loadUserByUsername("nosuchuser");
+        assertNull(user);
+    }
+    
+    @Test
+    @For(LdapSaslSecurityRealm.class)
     public void testLdapSaslSecurityRealm_loadUserByUsernameFailure()
     {
         LdapSaslSecurityRealm target = new LdapSaslSecurityRealm(
