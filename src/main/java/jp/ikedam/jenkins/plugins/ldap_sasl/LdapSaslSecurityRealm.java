@@ -492,7 +492,6 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
         env.put(Context.SECURITY_PRINCIPAL, username);
         env.put(Context.SECURITY_CREDENTIALS, password);
         env.put(Context.SECURITY_AUTHENTICATION, mechanisms);
-        env.put(Context.REFERRAL, "ignore");
         env.put("com.sun.jndi.ldap.connect.timeout", Integer.toString(getConnectionTimeout()));
         env.put("com.sun.jndi.ldap.read.timeout", Integer.toString(getReadTimeout()));
         
@@ -542,16 +541,16 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
                     query,
                     searchControls
             );
-            if(!entries.hasMore())
+            if(!entries.hasMoreElements())
             {
                 // no entry.
                 LOGGER.warning(String.format("User not found: %s", username));
                 return null;
             }
             
-            String userDn = entries.next().getNameInNamespace();
+            String userDn = entries.nextElement().getNameInNamespace();
             
-            if(entries.hasMore())
+            if(entries.hasMoreElements())
             {
                 // more than one entry.
                 LOGGER.warning(String.format("User found more than one: %s", username));
@@ -612,8 +611,8 @@ public class LdapSaslSecurityRealm extends AbstractPasswordBasedSecurityRealm
                     getGroupSearchQuery(dn),
                     searchControls
             );
-            while(entries.hasMore()){
-                SearchResult entry = entries.next();
+            while(entries.hasMoreElements()){
+                SearchResult entry = entries.nextElement();
                 String groupName = entry.getAttributes().get("cn").get().toString();
                 if(getGroupPrefix() != null){
                     groupName = getGroupPrefix() + groupName;
